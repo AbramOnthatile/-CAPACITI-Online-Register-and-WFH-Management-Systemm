@@ -1,18 +1,14 @@
-import Image from "next/image";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 export default function HomePage() {
   return (
     <main className="min-h-screen grid md:grid-cols-[1.2fr_0.8fr]">
       {/* Left: Image */}
       <div className="relative hidden md:block min-h-[420px] h-full overflow-hidden">
-        <Image
+        <img
           src="/images/capaciti-logo1.png"
           alt="CAPACITI candidates working"
-          fill
-          priority
-          sizes="(max-width: 768px) 0px, 60vw"
-          className="object-cover object-center scale-[1.05]"
+          className="absolute inset-0 h-full w-full object-cover object-center scale-[1.05]"
         />
         <div className="absolute inset-0 bg-navy/40" />
       </div>
@@ -34,7 +30,7 @@ export default function HomePage() {
           </p>
 
           <Link
-            href="/login"
+            to="/login"
             className="inline-block bg-purple text-white px-6 py-3 rounded-md font-medium hover:opacity-90 transition"
           >
             Get Started

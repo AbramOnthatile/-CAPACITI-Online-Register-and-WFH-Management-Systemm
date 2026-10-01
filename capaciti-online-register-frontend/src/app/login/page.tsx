@@ -1,19 +1,17 @@
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { mockUsers } from "@/data/mockUsers";
 import { Role } from "@/types/user";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [role, setRole] = useState<Role>("CANDIDATE");
 
   function handleLogin() {
     const user = mockUsers.find((u) => u.role === role);
     if (!user) return;
     localStorage.setItem("currentUser", JSON.stringify(user));
-    router.push(role === "CANDIDATE" ? "/candidate" : "/facilitator");
+    navigate(role === "CANDIDATE" ? "/candidate" : "/facilitator");
   }
 
   return (
