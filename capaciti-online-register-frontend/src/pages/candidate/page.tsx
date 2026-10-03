@@ -26,7 +26,7 @@ export default function CandidateDashboard() {
   return (
     <main className="min-h-screen bg-pink/30 p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Hi, {user.name.split(" ")[0]}</h1>
+        <h1 className="text-2xl font-bold text-navy">Hi, {user.fullName.split(" ")[0]}</h1>
         <p className="text-gray-600 text-sm">
           {today ? `Status: ${today.status}` : "Not checked in yet today"}
         </p>
