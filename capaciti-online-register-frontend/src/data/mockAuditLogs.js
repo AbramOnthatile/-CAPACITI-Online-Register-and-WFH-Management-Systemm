@@ -1,0 +1,42 @@
+export const auditLogs = [
+  {
+    id: 'audit-1',
+    timestamp: '2026-09-24T09:18:00',
+    user: 'Aphiwe Ndlovu',
+    action: 'Submitted WFH Request',
+    module: 'WFH',
+    description: 'Candidate submitted WFH request for 2026-09-25.',
+  },
+  {
+    id: 'audit-2',
+    timestamp: '2026-09-24T08:45:00',
+    user: 'Lerato Dlamini',
+    action: 'Approved WFH Request',
+    module: 'WFH',
+    description: 'Tech Champion approved WFH request for Mpho Mokoena.',
+  },
+  {
+    id: 'audit-3',
+    timestamp: '2026-09-24T08:58:00',
+    user: 'Aphiwe Ndlovu',
+    action: 'Clocked In',
+    module: 'Attendance',
+    description: 'Candidate clocked in at 08:57.',
+  },
+  {
+    id: 'audit-4',
+    timestamp: '2026-09-24T09:10:00',
+    user: 'Musa Zulu',
+    action: 'Updated User Role',
+    module: 'User Management',
+    description: 'Admin changed user role for a selected candidate account.',
+  },
+  {
+    id: 'audit-5',
+    timestamp: '2026-09-23T17:02:00',
+    user: 'Zanele Khumalo',
+    action: 'Submitted Daily Progress',
+    module: 'Progress',
+    description: 'Candidate submitted daily progress update.',
+  },
+];
