@@ -22,6 +22,6 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.mts"
-, "src/pages/candidate/CandidateDashboard.jsx"  ],
+, "src/pages/candidate/CandidateDashboard.jsx", "src/data/mockWFH.js", "src/data/mockUsers.js", "src/data/mockAttendance.js"  ],
   "exclude": ["node_modules"]
 }
