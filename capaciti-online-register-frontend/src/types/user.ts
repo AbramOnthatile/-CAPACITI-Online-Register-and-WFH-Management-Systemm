@@ -1,5 +1,5 @@
 export type Role = "candidate" | "tech-champion" | "admin";
-export type UserStatus = "Active" | "Away";
+export type CandidateStatus = "Active" | "Away" | "Inactive";
 
 export interface User {
   id: string;
@@ -11,6 +11,6 @@ export interface User {
   cohort: string;
   programme: string;
   techChampion: string;
-  status: UserStatus;
+  status: CandidateStatus;
   avatar: string;
 }

@@ -1,8 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
+  --color-primary-50: #F4EEFC;
+  --color-primary-100: #E8DCF9;
+  --color-primary-200: #D1B8F3;
+  --color-primary-300: #B794ED;
+  --color-primary-400: #9A6AE3;
+  --color-primary-500: #7E3BD9;
+  --color-primary-600: #6115D0;
+  --color-primary-700: #4F11AA;
+  --color-primary-800: #3D0D84;
+  --color-primary-900: #2B095E;
+
+  --color-navy: #1D2951;
+  --color-salmon: #F25251;
+  --color-pink: #F1D1D1;
+
+  --shadow-soft: 0 10px 30px -12px rgba(15, 23, 42, 0.15);
+
   font-family: Inter, 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -41,44 +56,109 @@ textarea {
 }
 
 .badge {
-  @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .card {
-  @apply rounded-2xl border border-slate-200 bg-white shadow-soft;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
 }
 
 .input {
-  @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px rgba(126, 59, 217, 0.12);
 }
 
 .btn {
-  @apply inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary-200 disabled:cursor-not-allowed disabled:opacity-60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(126, 59, 217, 0.2);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-primary {
-  @apply btn bg-primary-600 text-white hover:bg-primary-700;
+  background-color: var(--color-primary-600);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-700);
 }
 
 .btn-secondary {
-  @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.btn-secondary:hover {
+  background: #f8fafc;
 }
 
 .btn-success {
-  @apply btn bg-emerald-600 text-white hover:bg-emerald-700;
+  background-color: #059669;
+  color: #ffffff;
+}
+
+.btn-success:hover {
+  background-color: #047857;
 }
 
 .btn-warning {
-  @apply btn bg-amber-500 text-white hover:bg-amber-600;
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
+.btn-warning:hover {
+  background-color: #d97706;
 }
 
 .btn-danger {
-  @apply btn bg-red-600 text-white hover:bg-red-700;
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
 }
 
 .grid-hero {
-  background-image: radial-gradient(circle at top left, rgba(59,130,246,0.12), transparent 35%),
-    radial-gradient(circle at bottom right, rgba(16,185,129,0.14), transparent 30%);
+  background-image: radial-gradient(circle at top left, rgba(97,21,208,0.14), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(242,82,81,0.12), transparent 30%);
 }
 
 ::-webkit-scrollbar {
