@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext';
 import StatCard from '../../components/common/StatCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
+import NotificationList from '../../components/common/NotificationList';
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
@@ -90,17 +91,7 @@ const CandidateDashboard = () => {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card title="Notifications" subtitle="Most recent">
-          <div className="space-y-3">
-            {notificationList.slice(0, 3).map((item) => (
-              <div key={item.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{new Date(item.timestamp).toLocaleString()}</p>
-                </div>
-                <StatusBadge status={item.read ? 'Active' : 'Pending'}>{item.read ? 'Read' : 'Unread'}</StatusBadge>
-              </div>
-            ))}
-          </div>
+          <NotificationList notifications={notificationList.slice(0, 3)} compact />
         </Card>
 
         <Card title="Attendance Timeline">

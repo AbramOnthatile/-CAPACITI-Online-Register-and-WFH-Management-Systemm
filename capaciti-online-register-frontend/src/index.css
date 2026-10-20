@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --color-primary-50: #F4EEFC;
@@ -16,13 +18,14 @@
   --color-salmon: #F25251;
   --color-pink: #F1D1D1;
 
-  --shadow-soft: 0 10px 30px -12px rgba(15, 23, 42, 0.15);
+  --shadow-soft: 0 18px 45px -22px rgba(29, 41, 81, 0.32);
+  --shadow-brand: 0 20px 55px -24px rgba(97, 21, 208, 0.42);
 
-  font-family: Inter, 'Segoe UI', sans-serif;
+  font-family: Inter, 'Avenir Next', 'Segoe UI', Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #0f172a;
-  background: #f8fafc;
+  color: var(--color-navy);
+  background: #fffaf9;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -37,7 +40,17 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(241, 209, 209, 0.66), transparent 28%),
+    linear-gradient(180deg, #fffaf9 0%, #f8f5ff 100%);
+}
+
+h1,
+h2,
+h3,
+h4,
+.brand-wordmark {
+  font-family: 'Avenir Next', 'Montserrat', 'Segoe UI', Arial, sans-serif;
 }
 
 * {
@@ -59,17 +72,52 @@ textarea {
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .card {
-  border-radius: 1rem;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border: 1px solid rgba(29, 41, 81, 0.09);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.94);
   box-shadow: var(--shadow-soft);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.card:hover {
+  border-color: rgba(97, 21, 208, 0.16);
+  box-shadow: 0 22px 48px -26px rgba(29, 41, 81, 0.42);
+}
+
+.brand-mark {
+  transform: rotate(45deg);
+  filter: drop-shadow(0 7px 12px rgba(29, 41, 81, 0.18));
+}
+
+.brand-diamond {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+}
+
+.brand-diamond-navy {
+  background: var(--color-navy);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.brand-diamond-salmon {
+  inset: 5px;
+  background: var(--color-salmon);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.brand-diamond-cutout {
+  inset: 10px;
+  background: var(--color-pink);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
 .input {
@@ -113,20 +161,23 @@ textarea {
 .btn-primary {
   background-color: var(--color-primary-600);
   color: #ffffff;
+  box-shadow: var(--shadow-brand);
 }
 
 .btn-primary:hover {
   background-color: var(--color-primary-700);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(97, 21, 208, 0.2);
   background: #ffffff;
-  color: #334155;
+  color: var(--color-primary-600);
 }
 
 .btn-secondary:hover {
-  background: #f8fafc;
+  border-color: rgba(97, 21, 208, 0.4);
+  background: var(--color-primary-50);
 }
 
 .btn-success {
@@ -169,4 +220,85 @@ textarea {
 ::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.7);
   border-radius: 9999px;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 8mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .report-print-preview,
+  .report-print-preview * {
+    visibility: visible;
+  }
+
+  .report-print-preview {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    padding: 0;
+    background: #ffffff;
+    color: #1d2951;
+    font-family: Arial, sans-serif;
+  }
+
+  .report-print-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #6115d0;
+  }
+
+  .report-print-logo {
+    width: 150px;
+    height: auto;
+  }
+
+  .report-print-header h1 {
+    margin: 0;
+    color: #1d2951;
+    font-size: 20pt;
+  }
+
+  .report-print-header p {
+    margin: 0.2rem 0 0;
+    color: #64748b;
+    font-size: 10pt;
+  }
+
+  .report-print-preview table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 8pt;
+  }
+
+  .report-print-preview th,
+  .report-print-preview td {
+    overflow: hidden;
+    padding: 0.35rem;
+    border: 1px solid #cbd5e1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .report-print-preview th {
+    background: #f4eefc;
+    color: #2b095e;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .report-print-preview tr:nth-child(even) td {
+    background: #fffafa;
+  }
 }

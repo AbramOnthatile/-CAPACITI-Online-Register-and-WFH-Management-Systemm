@@ -3,25 +3,23 @@ import { Link } from "react-router-dom";
 export default function HomePage() {
   return (
     <main className="min-h-screen grid md:grid-cols-[1.2fr_0.8fr]">
-      {/* Left: Image */}
-      <div className="relative hidden md:block min-h-[420px] h-full overflow-hidden">
+      <div className="relative hidden min-h-[420px] items-center justify-center overflow-hidden bg-pink p-12 md:flex">
+        <div className="absolute -left-20 -top-20 h-64 w-64 rotate-45 border-[30px] border-salmon/20" />
+        <div className="absolute -bottom-24 -right-24 h-72 w-72 rotate-12 bg-primary-600/20" />
         <img
           src="/images/capaciti-logo1.png"
-          alt="CAPACITI candidates working"
-          className="absolute inset-0 h-full w-full object-cover object-center scale-[1.05]"
+          alt="CAPACITI logo"
+          className="relative w-full max-w-md drop-shadow-2xl"
         />
-        <div className="absolute inset-0 bg-navy/40" />
       </div>
 
-      {/* Right: Content */}
       <div className="flex flex-col items-center justify-center bg-navy text-white px-6 py-16">
         <div className="w-full max-w-md text-left">
-          <h1 className="text-3xl font-bold mb-2">CAPACITI</h1>
-          <p className="text-pink text-sm font-medium mb-8 uppercase tracking-wide">
+          <p className="text-pink text-sm font-bold uppercase tracking-[0.25em]">
             A Division of UVU Africa
           </p>
 
-          <h2 className="text-xl font-semibold mb-3">
+          <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight">
             Online Register &amp; WFH Management System
           </h2>
           <p className="text-gray-300 text-sm mb-10">

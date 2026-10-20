@@ -2,12 +2,37 @@ import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../../components/common/StatusBadge';
+import { printReport } from '../../services/reportService';
 
 const AttendanceMonitor = () => {
   const { attendance, users } = useApp();
   const [status, setStatus] = useState('All');
 
   const rows = attendance.filter((record) => status === 'All' || record.status === status);
+  const reportRows = rows.map((record) => ({
+    candidate: users.find((item) => item.id === record.candidateId)?.fullName || 'Unknown candidate',
+    date: record.date,
+    status: record.status,
+    checkIn: record.checkIn,
+    teaBreak: record.teaBreak,
+    lunch: record.lunch,
+    checkOut: record.checkOut,
+  }));
+
+  const handleExport = () => printReport({
+    title: 'Attendance Monitor',
+    subtitle: `CAPACITI | ${status === 'All' ? 'All attendance records' : `${status} records`}`,
+    columns: [
+      { key: 'candidate', label: 'Candidate' },
+      { key: 'date', label: 'Date' },
+      { key: 'status', label: 'Status' },
+      { key: 'checkIn', label: 'Check In' },
+      { key: 'teaBreak', label: 'Tea Break' },
+      { key: 'lunch', label: 'Lunch' },
+      { key: 'checkOut', label: 'Check Out' },
+    ],
+    rows: reportRows,
+  });
 
   return (
     <div className="space-y-6">
@@ -16,7 +41,7 @@ const AttendanceMonitor = () => {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Monitor</p>
           <h2 className="text-3xl font-bold text-slate-900">Attendance Monitor</h2>
         </div>
-        <button className="btn btn-secondary"><Download className="mr-2 h-4 w-4" />Export Report</button>
+        <button className="btn btn-secondary" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export Report</button>
       </div>
 
       <div className="card p-4">

@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
 import { attendanceRecords } from '../../data/mockAttendance';
+import { printReport } from '../../services/reportService';
 
 const AttendanceHistory = () => {
   const [statusFilter, setStatusFilter] = useState('All');
@@ -12,6 +13,21 @@ const AttendanceHistory = () => {
     return attendanceRecords.filter((entry) => entry.status === statusFilter);
   }, [statusFilter]);
 
+  const handleExport = () => printReport({
+    title: 'Attendance History',
+    subtitle: `CAPACITI | ${statusFilter === 'All' ? 'All attendance records' : `${statusFilter} records`}`,
+    columns: [
+      { key: 'date', label: 'Date' },
+      { key: 'status', label: 'Status' },
+      { key: 'checkIn', label: 'Check In' },
+      { key: 'teaBreak', label: 'Tea Break' },
+      { key: 'lunch', label: 'Lunch' },
+      { key: 'checkOut', label: 'Check Out' },
+      { key: 'totalHours', label: 'Total Hours' },
+    ],
+    rows: filtered,
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -19,7 +35,7 @@ const AttendanceHistory = () => {
           <p className="text-sm uppercase tracking-[0.2em] text-slate-400">History</p>
           <h2 className="text-3xl font-bold text-slate-900">Attendance History</h2>
         </div>
-        <button className="btn btn-secondary"><Download className="mr-2 h-4 w-4" />Export Report</button>
+        <button className="btn btn-secondary" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export Report</button>
       </div>
 
       <Card title="Filters" className="overflow-hidden">

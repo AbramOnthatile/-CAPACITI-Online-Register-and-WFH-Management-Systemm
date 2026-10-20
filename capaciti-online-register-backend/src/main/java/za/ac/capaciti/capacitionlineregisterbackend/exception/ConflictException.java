@@ -1,14 +1,11 @@
 package za.ac.capaciti.capacitionlineregisterbackend.exception;
 
-public class ConflictException extends RuntimeException {
-    private final String code;
+import org.springframework.http.HttpStatus;
+
+// Indicates that a request conflicts with existing state.
+public class ConflictException extends ApiException {
 
     public ConflictException(String code, String message) {
-        super(message);
-        this.code = code;
-    }
-
-    public String getCode() {
-        return code;
+        super(HttpStatus.CONFLICT, code, message);
     }
 }

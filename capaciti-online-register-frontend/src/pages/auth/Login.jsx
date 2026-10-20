@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import BrandLogo from '../../components/common/BrandLogo';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,87 +44,99 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <div className="grid max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-soft md:grid-cols-2">
-        <div className="grid-hero flex flex-col justify-between bg-primary-600 p-8 text-white">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-primary-100">CAPACITI</p>
-            <h1 className="mt-4 text-4xl font-bold">Online Register & WFH Management</h1>
+    <main className="flex min-h-screen items-center justify-center bg-pink/40 px-4 py-6 sm:px-6">
+      <section className="grid w-full max-w-5xl overflow-hidden rounded-[1.75rem] border border-navy/10 bg-white shadow-[0_30px_90px_-35px_rgba(29,41,81,0.5)] md:grid-cols-2">
+        <aside className="relative flex min-h-[22rem] flex-col justify-between overflow-hidden bg-navy px-7 py-8 text-white sm:px-10 md:min-h-[38rem] md:px-12 md:py-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink/45 via-pink/10 to-primary-600/25" />
+          <div className="absolute -right-14 -top-14 h-48 w-48 rotate-12 border-[28px] border-salmon/20" />
+          <div className="absolute -bottom-16 -left-16 h-56 w-56 rotate-45 bg-primary-600/20" />
+          <div className="relative z-20">
+            <BrandLogo className="relative z-20 max-w-[14rem] drop-shadow-[0_4px_12px_rgba(0,0,0,0.35)]" />
+            <p className="mt-8 text-xs font-bold uppercase tracking-[0.3em] text-white">Online Register & WFH Management</p>
+            <h1 className="mt-4 max-w-md text-3xl font-black leading-tight tracking-[-0.04em] text-white drop-shadow-sm sm:text-4xl">Built for stronger, more connected work.</h1>
           </div>
-          <div className="mt-8 space-y-4 text-sm text-primary-50">
-            <p>Track attendance, submit WFH requests, and review progress in one secure platform.</p>
-            <div className="rounded-2xl border border-white/20 bg-white/10 p-4">
-              <p className="font-semibold">Demo access</p>
-              <p className="mt-2">candidate@capaciti.test / champion@capaciti.test / admin@capaciti.test</p>
-              <p className="mt-1 text-primary-100">Password: Password123!</p>
+          <div className="relative z-10 mt-10 space-y-4 text-sm leading-6 text-white">
+            <p className="font-medium">Track attendance, submit WFH requests, and review progress in one secure platform.</p>
+            <div className="rounded-2xl border border-white/20 bg-navy/70 p-4 shadow-lg backdrop-blur-md">
+              <p className="font-bold text-white">Demo access</p>
+              <p className="mt-2 break-all text-white/90">candidate@capaciti.test / champion@capaciti.test / admin@capaciti.test</p>
+              <p className="mt-1 text-white/90">Password: Password123!</p>
             </div>
           </div>
-        </div>
+        </aside>
 
-        <div className="p-6 md:p-10">
+        <div className="bg-white px-6 py-8 text-navy sm:px-10 md:px-12 md:py-10">
           <div className="mb-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary-600">Welcome back</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">Sign in</h2>
+            <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-salmon">Welcome back</p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-navy">Sign in</h2>
+            <p className="mt-2 text-sm font-medium leading-6 text-slate-600">Enter your details to access your CAPACITI workspace.</p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+          <form className="space-y-5 text-navy" onSubmit={handleSubmit} noValidate>
             <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">Email</label>
+              <label htmlFor="email" className="mb-2 block text-sm font-bold text-slate-700">Email address</label>
               <input
                 id="email"
                 type="email"
-                className="input"
+                autoComplete="email"
+                className="input text-slate-800 placeholder:text-slate-400"
+                placeholder="name@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
               />
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {errors.email && <p id="email-error" className="mt-1.5 text-sm font-medium text-red-600">{errors.email}</p>}
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">Password</label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label htmlFor="password" className="text-sm font-bold text-slate-700">Password</label>
+                <span className="text-xs font-medium text-primary-600">Secure login</span>
+              </div>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  className="input pr-11"
+                  autoComplete="current-password"
+                  className="input pr-12 text-slate-800 placeholder:text-slate-400"
+                  placeholder="Enter your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                 />
                 <button
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute inset-y-0 right-3 my-auto text-slate-500"
+                  className="absolute inset-y-0 right-3 my-auto rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-navy focus:outline-none focus:ring-2 focus:ring-primary-500"
                   onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              {errors.password && <p id="password-error" className="mt-1.5 text-sm font-medium text-red-600">{errors.password}</p>}
             </div>
 
-            <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-primary-600" />
-                Remember me
-              </label>
-            </div>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-600">
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-600" />
+              Remember me
+            </label>
 
             {errors.form && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
                 {errors.form}
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="btn-primary w-full">
-              <LogIn className="mr-2 h-4 w-4" />
-              {loading ? 'Logging in...' : 'Login'}
+            <button type="submit" disabled={loading} className="btn btn-primary w-full py-3 text-base">
+              <LogIn className="mr-2 h-5 w-5" />
+              {loading ? 'Logging in...' : 'Sign in'}
             </button>
           </form>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
