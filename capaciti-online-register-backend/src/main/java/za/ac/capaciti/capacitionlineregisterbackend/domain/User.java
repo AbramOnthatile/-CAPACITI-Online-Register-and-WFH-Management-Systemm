@@ -1,5 +1,9 @@
 package za.ac.capaciti.capacitionlineregisterbackend.domain;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.Role;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 import jakarta.persistence.Column;
@@ -22,35 +26,20 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User extends BaseEntity {
-
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
 
-    @Column(name = "password_hash")
-    private String passwordHash;
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
-    private Role role;
+    private String role;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "default_mode", nullable = false)
-    private WorkMode defaultMode;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campus_id")
-    private CampusHub campus;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "champion_id")
-    private User champion;
-
-    @Builder.Default
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
