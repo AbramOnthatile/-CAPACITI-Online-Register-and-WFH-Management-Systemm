@@ -14,11 +14,11 @@ public class UserMapper {
                 user.getEmail(),
                 user.getFullName(),
                 user.getRole(),
-                user.getDefaultMode(),
+                user.getWorkMode(),
                 user.getCampus() == null ? null : user.getCampus().getId(),
                 user.getCampus() == null ? null : user.getCampus().getName(),
                 user.getChampion() == null ? null : user.getChampion().getId(),
-                user.isActive(),
+                user.getActive(),
                 user.getCreatedAt());
     }
 }

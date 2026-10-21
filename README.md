@@ -36,6 +36,7 @@ The current frontend uses mock authentication and mock data. It is suitable for 
 
 - Node.js 18 or newer
 - npm
+- Java 25 LTS for the backend
 - A modern browser
 
 ## Installation

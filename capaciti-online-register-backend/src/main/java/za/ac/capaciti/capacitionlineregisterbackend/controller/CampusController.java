@@ -3,7 +3,7 @@ package za.ac.capaciti.capacitionlineregisterbackend.controller;
 import java.util.List;
 import java.util.UUID;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

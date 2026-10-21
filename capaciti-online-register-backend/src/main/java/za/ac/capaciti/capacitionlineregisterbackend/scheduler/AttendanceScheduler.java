@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import za.ac.capaciti.capacitionlineregisterbackend.repository.ReportRepository;
-import za.ac.capaciti.capacitionlineregisterbackend.service.IAttendanceService;
+import za.ac.capaciti.capacitionlineregisterbackend.services.IAttendanceService;
 import za.ac.capaciti.capacitionlineregisterbackend.util.TimeUtil;
 
 @Component

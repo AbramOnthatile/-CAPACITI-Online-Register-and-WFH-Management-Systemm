@@ -1,6 +1,5 @@
 package za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.UUID;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
@@ -17,7 +16,7 @@ public record TicketDto(
         String description,
         String attachmentUrl,
         TicketStatus status,
-        @JsonProperty("isProlonged") boolean prolonged,
+        boolean prolonged,
         String resolvedByName,
         Instant resolvedAt,
         String resolutionNote,
