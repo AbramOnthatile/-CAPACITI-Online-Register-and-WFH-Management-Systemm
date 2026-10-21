@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 public final class TimeUtil {
 
@@ -16,6 +17,14 @@ public final class TimeUtil {
     }
 
     public static LocalDate today() {
-        return LocalDate.now(ZONE);
+        return now().toLocalDate();
+    }
+
+    public static ZonedDateTime now() {
+        return ZonedDateTime.now(ZONE);
+    }
+
+    public static Instant toInstant(LocalDate date, LocalTime time) {
+        return date.atTime(time).atZone(ZONE).toInstant();
     }
 }
