@@ -21,7 +21,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.CreateUserR
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserStatusRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UserDto;
-import za.ac.capaciti.capacitionlineregisterbackend.enums.Role;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.Role;
 import za.ac.capaciti.capacitionlineregisterbackend.service.IUserService;
 
 @RestController

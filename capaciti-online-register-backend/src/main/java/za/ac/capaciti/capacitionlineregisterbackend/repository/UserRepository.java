@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
-import za.ac.capaciti.capacitionlineregisterbackend.enums.Role;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
@@ -19,7 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmailIgnoreCase(String email);
 
-    List<User> findByRole(Role role);
+        List<User> findByRole(Enum<?> role);
 
     @Query("""
             SELECT u FROM User u
@@ -30,7 +29,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :text, '%')))
             """)
     Page<User> searchUsers(
-            @Param("role") Role role,
+            @Param("role") Enum<?> role,
             @Param("active") Boolean active,
             @Param("text") String text,
             Pageable pageable);

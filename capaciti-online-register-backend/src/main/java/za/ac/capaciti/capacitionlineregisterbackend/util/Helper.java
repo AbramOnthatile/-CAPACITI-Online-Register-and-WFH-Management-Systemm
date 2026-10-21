@@ -1,18 +1,18 @@
 package za.ac.capaciti.capacitionlineregisterbackend.util;
 
+import java.util.regex.Pattern;
+
 public final class Helper {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$");
+
     private Helper() {
     }
 
     public static boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
-}
-import org.apache.commons.validator.routines.EmailValidator;
-
-public final class Helper {
-
-    private Helper() {}
 
     // Returns true if the object is null
     public static boolean isNull(Object obj) {
@@ -36,7 +36,7 @@ public final class Helper {
 
     // Returns true if the email is null, empty or not a valid format
     public static boolean isInvalidEmail(String email) {
-        return isNullOrEmpty(email) || !EmailValidator.getInstance().isValid(email.trim());
+        return isNullOrEmpty(email) || !EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 
     // Returns true if the password is null, empty or shorter than 8 characters

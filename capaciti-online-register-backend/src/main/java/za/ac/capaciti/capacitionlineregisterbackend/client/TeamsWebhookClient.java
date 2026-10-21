@@ -1,6 +1,10 @@
 package za.ac.capaciti.capacitionlineregisterbackend.client;
 
 import java.time.Duration;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,10 +13,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
 public class TeamsWebhookClient {
@@ -20,16 +21,14 @@ public class TeamsWebhookClient {
     private static final Logger log = LoggerFactory.getLogger(TeamsWebhookClient.class);
     private static final String ADAPTIVE_CARD_CONTENT_TYPE = "application/vnd.microsoft.card.adaptive";
     private static final String ADAPTIVE_CARD_SCHEMA = "http://adaptivecards.io/schemas/adaptive-card.json";
-
-    private final WebClient webClient;
+    private final HttpClient httpClient;
     private final String webhookUrl;
     private final long timeoutSeconds;
 
     public TeamsWebhookClient(
-            WebClient.Builder webClientBuilder,
             @Value("${teams.webhook-url:}") String webhookUrl,
             @Value("${teams.timeout-seconds:5}") long timeoutSeconds) {
-        this.webClient = webClientBuilder.build();
+            this.httpClient = HttpClient.newHttpClient();
         this.webhookUrl = webhookUrl;
         this.timeoutSeconds = timeoutSeconds;
     }
@@ -41,27 +40,27 @@ public class TeamsWebhookClient {
         }
 
         try {
-            var response = webClient.post()
-                    .uri(webhookUrl)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(buildPayload(title, message, facts))
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block(Duration.ofSeconds(timeoutSeconds));
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(webhookUrl))
+                    .timeout(Duration.ofSeconds(timeoutSeconds))
+                    .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(toJson(buildPayload(title, message, facts))))
+                    .build();
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
 
-            if (response != null && response.getStatusCode().is2xxSuccessful()) {
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return true;
             }
 
             log.warn("Teams alert failed: exception={}, HTTP status={}",
-                    IllegalStateException.class.getSimpleName(), response == null ? "none" : response.getStatusCode().value());
+                    IllegalStateException.class.getSimpleName(), response.statusCode());
             return false;
         } catch (Exception exception) {
-            String httpStatus = exception instanceof WebClientResponseException responseException
-                    ? Integer.toString(responseException.getStatusCode().value())
-                    : "none";
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             log.warn("Teams alert failed: exception={}, HTTP status={}",
-                    exception.getClass().getSimpleName(), httpStatus);
+                    exception.getClass().getSimpleName(), "none");
             return false;
         }
     }
@@ -100,5 +99,54 @@ public class TeamsWebhookClient {
         return Map.of(
                 "type", "message",
                 "attachments", List.of(attachment));
+    }
+
+    private String toJson(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof String) {
+            return quoteJsonString((String) value);
+        }
+        if (value instanceof Map<?, ?>) {
+            List<String> entries = new ArrayList<>();
+            ((Map<?, ?>) value).forEach((key, entryValue) -> entries.add(
+                    quoteJsonString(String.valueOf(key)) + ":" + toJson(entryValue)));
+            return "{" + String.join(",", entries) + "}";
+        }
+        if (value instanceof Iterable<?>) {
+            List<String> entries = new ArrayList<>();
+            for (Object entry : (Iterable<?>) value) {
+                entries.add(toJson(entry));
+            }
+            return "[" + String.join(",", entries) + "]";
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return value.toString();
+        }
+        return quoteJsonString(value.toString());
+    }
+
+    private String quoteJsonString(String value) {
+        StringBuilder result = new StringBuilder("\"");
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            switch (character) {
+                case '"': result.append("\\\""); break;
+                case '\\': result.append("\\\\"); break;
+                case '\b': result.append("\\b"); break;
+                case '\f': result.append("\\f"); break;
+                case '\n': result.append("\\n"); break;
+                case '\r': result.append("\\r"); break;
+                case '\t': result.append("\\t"); break;
+                default:
+                    if (character < 0x20) {
+                        result.append(String.format("\\u%04x", (int) character));
+                    } else {
+                        result.append(character);
+                    }
+            }
+        }
+        return result.append('"').toString();
     }
 }

@@ -1,7 +1,7 @@
 package za.ac.capaciti.capacitionlineregisterbackend.mappers;
 
 import java.time.Duration;
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import org.springframework.stereotype.Component;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.SupportTicket;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.TicketDto;
@@ -15,7 +15,7 @@ public class TicketMapper {
             return null;
         }
 
-        Instant now = TimeUtil.now();
+        ZonedDateTime now = TimeUtil.now();
         long ageMinutes = Duration.between(ticket.getCreatedAt(), now).toMinutes();
 
         return new TicketDto(
