@@ -1,3 +1,6 @@
+import '@fontsource-variable/sora';
+import '@fontsource-variable/figtree';
+import '@fontsource/ibm-plex-mono/400.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
