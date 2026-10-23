@@ -1,0 +1,63 @@
+:root {
+  --color-primary-50: #F4EFFE;
+  --color-primary-50-rgb: 244 239 254;
+  --color-primary-100: #E9DFFD;
+  --color-primary-100-rgb: 233 223 253;
+  --color-primary-500: #7A3BE0;
+  --color-primary-500-rgb: 122 59 224;
+  --color-primary-600: #5B16D0;
+  --color-primary-600-rgb: 91 22 208;
+  --color-primary-700: #4A10AB;
+  --color-primary-700-rgb: 74 16 171;
+
+  --color-ink-900: #1B2447;
+  --color-ink-900-rgb: 27 36 71;
+  --color-ink-700: #3A4468;
+  --color-ink-700-rgb: 58 68 104;
+  --color-ink-500: #64708A;
+  --color-ink-500-rgb: 100 112 138;
+  --color-ink-300: #A7AEC2;
+  --color-ink-300-rgb: 167 174 194;
+
+  --color-surface: #F6F7FB;
+  --color-surface-rgb: 246 247 251;
+  --color-card: #FFFFFF;
+  --color-card-rgb: 255 255 255;
+  --color-border: #E4E7F0;
+  --color-border-rgb: 228 231 240;
+  --color-accent: #F04B4B;
+  --color-accent-rgb: 240 75 75;
+
+  --color-success: #12A150;
+  --color-success-rgb: 18 161 80;
+  --color-success-soft: #E6F6EC;
+  --color-success-soft-rgb: 230 246 236;
+  --color-warning: #D98A06;
+  --color-warning-rgb: 217 138 6;
+  --color-warning-soft: #FDF2DC;
+  --color-warning-soft-rgb: 253 242 220;
+  --color-danger: #D92D3A;
+  --color-danger-rgb: 217 45 58;
+  --color-danger-soft: #FDE8EA;
+  --color-danger-soft-rgb: 253 232 234;
+  --color-info: #2563EB;
+  --color-info-rgb: 37 99 235;
+  --color-info-soft: #E7EFFE;
+  --color-info-soft-rgb: 231 239 254;
+
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --shadow-card: 0 8px 24px rgba(27, 36, 71, 0.08);
+  --font-display: 'Sora', sans-serif;
+  --font-sans: 'Figtree', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --color-navy: var(--color-ink-900);
+  --color-salmon: var(--color-accent);
+  --color-pink: var(--color-primary-100);
+  --shadow-soft: var(--shadow-card);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

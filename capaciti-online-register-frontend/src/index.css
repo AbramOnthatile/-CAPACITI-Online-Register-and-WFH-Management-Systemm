@@ -1,31 +1,17 @@
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --color-primary-50: #F4EEFC;
-  --color-primary-100: #E8DCF9;
-  --color-primary-200: #D1B8F3;
-  --color-primary-300: #B794ED;
-  --color-primary-400: #9A6AE3;
-  --color-primary-500: #7E3BD9;
-  --color-primary-600: #6115D0;
-  --color-primary-700: #4F11AA;
-  --color-primary-800: #3D0D84;
-  --color-primary-900: #2B095E;
-
-  --color-navy: #1D2951;
-  --color-salmon: #F25251;
-  --color-pink: #F1D1D1;
-
-  --shadow-soft: 0 18px 45px -22px rgba(29, 41, 81, 0.32);
   --shadow-brand: 0 20px 55px -24px rgba(97, 21, 208, 0.42);
 
-  font-family: Inter, 'Avenir Next', 'Segoe UI', Arial, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
-  color: var(--color-navy);
-  background: #fffaf9;
+  color: var(--color-ink-900);
+  background: var(--color-surface);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -40,9 +26,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 8% 0%, rgba(241, 209, 209, 0.66), transparent 28%),
-    linear-gradient(180deg, #fffaf9 0%, #f8f5ff 100%);
+  background: var(--color-surface);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
 }
 
 h1,
@@ -50,7 +36,7 @@ h2,
 h3,
 h4,
 .brand-wordmark {
-  font-family: 'Avenir Next', 'Montserrat', 'Segoe UI', Arial, sans-serif;
+  font-family: var(--font-display);
 }
 
 * {
