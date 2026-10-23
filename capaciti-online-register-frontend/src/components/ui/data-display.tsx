@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Card } from './button';
+import { icons } from '../icons';
+import { useCountUp } from '../../lib/useCountUp';
 
 export type StatTrend = {
   value: string;
@@ -19,10 +21,43 @@ export type StatCardProps = {
 };
 
 const trendClasses: Record<StatTrend['direction'], string> = {
-  up: 'text-success',
-  down: 'text-danger',
-  neutral: 'text-ink-500',
+  up: 'border-success-soft bg-success-soft text-success',
+  down: 'border-danger-soft bg-danger-soft text-danger',
+  neutral: 'border-primary-100 bg-primary-50 text-primary-700',
 };
+
+const trendIcons = {
+  up: icons.trendUp,
+  down: icons.trendDown,
+  neutral: null,
+} as const;
+
+type NumericValue = {
+  target: number;
+  prefix: string;
+  suffix: string;
+  decimals: number;
+};
+
+function getNumericValue(value: ReactNode): NumericValue | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return { target: value, prefix: '', suffix: '', decimals: 0 };
+  }
+  if (typeof value !== 'string') return null;
+
+  const match = value.trim().match(/^([^0-9-]*)(-?\d[\d,]*(?:\.\d+)?)(.*)$/);
+  if (!match) return null;
+
+  const numeric = Number(match[2].replaceAll(',', ''));
+  if (!Number.isFinite(numeric)) return null;
+
+  return {
+    target: numeric,
+    prefix: match[1],
+    suffix: match[3],
+    decimals: match[2].split('.')[1]?.length ?? 0,
+  };
+}
 
 export function StatCard({
   label,
@@ -32,23 +67,35 @@ export function StatCard({
   trend,
   className = '',
 }: StatCardProps) {
+  const numericValue = getNumericValue(value);
+  const count = useCountUp(numericValue?.target ?? 0);
+  const formattedCount = numericValue
+    ? `${numericValue.prefix}${count.toLocaleString('en-ZA', {
+        minimumFractionDigits: numericValue.decimals,
+        maximumFractionDigits: numericValue.decimals,
+      })}${numericValue.suffix}`
+    : value;
+  const iconTone = trend?.direction ?? 'neutral';
+  const TrendIcon = trend ? trendIcons[trend.direction] : null;
+
   return (
     <Card className={className}>
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink-500">{label}</p>
-          <p className="mt-2 break-words text-2xl font-bold tracking-tight text-ink-900">
-            {value}
+          <p className="mt-2 break-words font-display text-2xl font-bold tabular-nums tracking-tight text-ink-900">
+            {formattedCount}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-primary-50 text-primary-600">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-control ${trendClasses[iconTone]}`}>
           <Icon aria-hidden="true" className="h-5 w-5" />
         </span>
       </div>
       {(hint || trend) && (
         <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
           {trend && (
-            <span className={`font-semibold ${trendClasses[trend.direction]}`}>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold ${trendClasses[trend.direction]}`}>
+              {TrendIcon && <TrendIcon aria-hidden="true" className="h-3.5 w-3.5" />}
               {trend.value}
             </span>
           )}
@@ -86,10 +133,10 @@ export function Table<Row>({
   className = '',
 }: TableProps<Row>) {
   return (
-    <div className={`w-full overflow-x-auto rounded-card border border-border ${className}`}>
+    <div className={`max-h-[70vh] w-full overflow-auto rounded-card border border-border ${className}`}>
       <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
-        <thead className="bg-surface text-xs font-semibold uppercase tracking-wide text-ink-500">
+        <thead className="sticky top-0 z-10 bg-surface text-xs font-semibold uppercase tracking-wide text-ink-500">
           <tr>
             {columns.map((column) => (
               <th
@@ -102,9 +149,9 @@ export function Table<Row>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-border bg-card">
+        <tbody className="motion-stagger divide-y divide-border bg-card">
           {rows.map((row) => (
-            <tr key={rowKey(row)} className="text-ink-700">
+            <tr key={rowKey(row)} className="text-ink-700 hover:bg-primary-50/60">
               {columns.map((column) => (
                 <td
                   key={column.key}

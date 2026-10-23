@@ -70,7 +70,6 @@ textarea {
   border-radius: 1.15rem;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: var(--shadow-soft);
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .card:hover {
@@ -115,7 +114,6 @@ textarea {
   font-size: 0.875rem;
   color: #0f172a;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input:focus {
@@ -131,7 +129,6 @@ textarea {
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 
 .btn:focus {

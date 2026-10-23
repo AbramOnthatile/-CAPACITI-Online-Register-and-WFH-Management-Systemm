@@ -194,7 +194,7 @@ function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
 function ReportLoadingState() {
   return (
     <div className="space-y-6" role="status" aria-label="Loading reports">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="motion-stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 8 }, (_, index) => (
           <Card key={index} className="space-y-3">
             <Skeleton className="w-2/3" />

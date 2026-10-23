@@ -60,4 +60,25 @@ export type {
   TabItem,
   TabsProps,
 } from './navigation';
+export {
+  ClockButton,
+  CountdownRing,
+  LiveClock,
+  ModeBadge,
+  PageHero,
+  UserCard,
+  WeekStrip,
+} from './signature';
+export type {
+  ClockButtonProps,
+  ClockButtonState,
+  CountdownRingProps,
+  LiveClockProps,
+  ModeBadgeProps,
+  PageHeroProps,
+  UserCardProps,
+  WeekStripDay,
+  WeekStripProps,
+  WeekStripStatus,
+} from './signature';
 export { KitPreview } from './KitPreview';

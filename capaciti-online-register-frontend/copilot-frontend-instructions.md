@@ -22,3 +22,11 @@ CODE RULES
 - Times shown in Africa/Johannesburg using src/lib/time.ts. Countdowns use serverTime and expiresAt from the API.
 - Free-text forms send a draftKey (random string created when the form opens, reused on retry) and show quality.feedbackMessage inline when quality.accepted is false.
 - Do not add dependencies. Ask the lead.
+
+MOTION
+- Use CSS only (keyframes and transitions in src/styles/motion.css). Do not add animation libraries.
+- Durations: 150ms for hover and press, 250ms for enter, 400ms for count-ups and chart draw. One easing: cubic-bezier(0.22, 1, 0.36, 1).
+- Animate only transform and opacity. Never animate layout properties.
+- Every animation is disabled under @media (prefers-reduced-motion: reduce).
+- Motion must carry meaning: pulse means "act now", shake means "failed", check draw means "done". No decorative looping except the clock button idle pulse and live indicators.
+- Skeletons shimmer. Lists stagger in by 40ms per item, maximum 8 items.

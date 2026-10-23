@@ -13,6 +13,15 @@ import { Button, Card } from './button';
 import { Field, Input, Select, Textarea } from './fields';
 import { BottomSheet, Modal, ToastProvider, useToast } from './overlays';
 import { PageHeader, SegmentedControl, Tabs } from './navigation';
+import {
+  ClockButton,
+  CountdownRing,
+  LiveClock,
+  ModeBadge,
+  PageHero as SignaturePageHero,
+  UserCard,
+  WeekStrip,
+} from './signature';
 
 type PreviewRow = {
   id: string;
@@ -24,6 +33,24 @@ const previewRows: PreviewRow[] = [
   { id: '1', name: 'Sam Dlamini', status: 'ON_TIME' },
   { id: '2', name: 'Taylor Mokoena', status: 'LATE_UNEXCUSED' },
 ];
+
+const previewToday = new Date().toISOString().slice(0, 10);
+
+function previewWeekDays() {
+  const weekStart = new Date(`${previewToday}T12:00:00Z`);
+  weekStart.setUTCDate(weekStart.getUTCDate() - ((weekStart.getUTCDay() + 6) % 7));
+  const statuses = ['ON_TIME', 'LATE_UNEXCUSED', 'WFH', 'NONE', 'NONE'] as const;
+
+  return statuses.map((status, index) => {
+    const date = new Date(weekStart);
+    date.setUTCDate(weekStart.getUTCDate() + index);
+    return {
+      date: date.toISOString().slice(0, 10),
+      status,
+      hoursLabel: status === 'ON_TIME' ? '8h 02m' : status === 'LATE_UNEXCUSED' ? '7h 45m' : status === 'WFH' ? 'In progress' : '—',
+    };
+  });
+}
 
 const previewColumns = [
   {
@@ -46,6 +73,7 @@ function KitPreviewContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [countdownStart] = useState(() => Date.now());
+  const [previewTime] = useState(() => Date.now());
   const [textareaValue, setTextareaValue] = useState('');
   const { showToast } = useToast();
 
@@ -76,7 +104,7 @@ function KitPreviewContent() {
           <h2 id="kit-actions" className="mb-3 font-display text-lg font-semibold">
             Buttons and badges
           </h2>
-          <Card className="flex flex-wrap items-center gap-3">
+          <Card className="flex flex-wrap items-center gap-3" onClick={() => undefined} role="button" tabIndex={0}>
             <Button>Primary</Button>
             <Button variant="secondary" size="sm">Secondary</Button>
             <Button variant="ghost">Ghost</Button>
@@ -229,6 +257,69 @@ function KitPreviewContent() {
               Open responsive bottom sheet
             </Button>
           </Card>
+        </section>
+
+        <section aria-labelledby="kit-signature">
+          <h2 id="kit-signature" className="mb-3 font-display text-lg font-semibold">
+            Signature components
+          </h2>
+          <div className="space-y-5">
+            <Card className="space-y-5">
+              <h3 className="font-semibold text-ink-900">Clock button states</h3>
+              <div className="grid grid-cols-1 justify-items-center gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                <ClockButton state="idle" label="Clock in" sublabel="Tap to start" onPress={() => showToast({ title: 'Clock in pressed' })} />
+                <ClockButton state="locating" label="Clock in" onPress={() => undefined} />
+                <ClockButton state="verifying" label="Clock in" onPress={() => undefined} />
+                <ClockButton state="success" label="Clock in" onPress={() => undefined} />
+                <ClockButton state="error" label="Clock in" onPress={() => showToast({ title: 'Retry requested', tone: 'warning' })} />
+                <ClockButton state="clockedIn" label="Clock in" sublabel="02:14:08" onPress={() => showToast({ title: 'Clock out pressed' })} />
+                <ClockButton state="done" label="Clock in" onPress={() => undefined} />
+              </div>
+            </Card>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Card className="space-y-4">
+                <h3 className="font-semibold text-ink-900">Live clocks</h3>
+                <LiveClock serverTime={previewTime} />
+                <LiveClock serverTime={previewTime} variant="hero" />
+              </Card>
+              <Card className="space-y-4">
+                <h3 className="font-semibold text-ink-900">Current work week</h3>
+                <WeekStrip
+                  today={previewToday}
+                  days={previewWeekDays()}
+                />
+              </Card>
+            </div>
+
+            <SignaturePageHero
+              eyebrow="Candidate home"
+              title="Good morning, Sam"
+              subtitle="Your workday at a glance."
+              variant="gradient"
+              action={<Button variant="secondary">View attendance</Button>}
+            />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Card className="space-y-3">
+                <h3 className="font-semibold text-ink-900">Profile and work mode</h3>
+                <UserCard name="Sam Dlamini" role="Candidate" campus="Johannesburg Campus" champion />
+                <div className="flex flex-wrap gap-2">
+                  <ModeBadge mode="ON_SITE" />
+                  <ModeBadge mode="WFH" />
+                </div>
+              </Card>
+              <Card className="flex flex-col items-center gap-3">
+                <h3 className="font-semibold text-ink-900">Countdown ring</h3>
+                <CountdownRing
+                  expiresAt={previewTime + 8 * 60_000}
+                  serverTime={previewTime}
+                  totalSeconds={8 * 60}
+                  onExpire={() => showToast({ title: 'Countdown finished', tone: 'warning' })}
+                />
+              </Card>
+            </div>
+          </div>
         </section>
       </div>
 

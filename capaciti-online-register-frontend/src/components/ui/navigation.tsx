@@ -127,7 +127,7 @@ export function Tabs({
               disabled={item.disabled}
               onClick={() => onChange(item.value)}
               onKeyDown={(event) => handleKeyDown(event, index)}
-              className={`min-h-11 shrink-0 border-b-2 px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 ${selected ? 'border-primary-600 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-900'}`}
+              className={`motion-interactive min-h-11 shrink-0 border-b-2 px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 ${selected ? 'border-primary-600 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-900'}`}
             >
               {item.label}
             </button>
@@ -185,7 +185,7 @@ export function SegmentedControl({
             aria-pressed={selected}
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
-            className={`min-h-11 shrink-0 rounded-control px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'bg-card text-ink-900 shadow-soft' : 'text-ink-500 hover:text-ink-900'}`}
+            className={`motion-interactive min-h-11 shrink-0 rounded-control px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'bg-card text-ink-900 shadow-soft' : 'text-ink-500 hover:text-ink-900'}`}
           >
             {option.label}
           </button>

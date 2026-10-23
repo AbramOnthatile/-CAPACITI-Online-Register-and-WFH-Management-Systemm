@@ -16,7 +16,8 @@ import {
 import { chartColor } from '../../lib/status';
 import type { ChartColorKey } from '../../lib/status';
 import { icons } from '../icons';
-import { Card, EmptyState, Skeleton } from '../ui';
+import { Card } from '../ui/button';
+import { EmptyState, Skeleton } from '../ui/feedback';
 
 export type ChartCardProps = {
   title: string;
@@ -149,7 +150,7 @@ type ChartSurfaceProps = {
 
 function ChartSurface({ children, className = '' }: ChartSurfaceProps) {
   return (
-    <div className={`h-56 min-w-0 w-full sm:h-64 ${className}`}>
+    <div className={`motion-chart-draw h-56 min-w-0 w-full sm:h-64 ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
         {children}
       </ResponsiveContainer>
@@ -252,6 +253,7 @@ export function TrendBarChart({
               name={item.label}
               stackId="attendance"
               fill={item.color}
+              isAnimationActive={false}
               radius={item.key === 'absent' ? [3, 3, 0, 0] : undefined}
               maxBarSize={36}
             />
@@ -312,6 +314,7 @@ export function DonutChart({
               paddingAngle={2}
               stroke="var(--color-card)"
               strokeWidth={3}
+              isAnimationActive={false}
             >
               {validData.map((item) => (
                 <Cell key={item.key} fill={chartColor(item.key)} />
@@ -378,7 +381,13 @@ export function HorizontalBarChart({
             }
           />
           <Tooltip content={<SharedTooltip />} cursor={{ fill: 'var(--color-surface)' }} />
-          <Bar dataKey="value" name="Count" radius={[0, 4, 4, 0]} maxBarSize={28}>
+          <Bar
+            dataKey="value"
+            name="Count"
+            radius={[0, 4, 4, 0]}
+            maxBarSize={28}
+            isAnimationActive={false}
+          >
             {data.map((item) => (
               <Cell key={item.key} fill={colorMap.get(item.key)} />
             ))}
@@ -479,6 +488,7 @@ export function StackedBarChart({
               name={item.label}
               stackId="stacked"
               fill={chartColor(item.colorKey)}
+              isAnimationActive={false}
               radius={
                 index === series.length - 1
                   ? layout === 'horizontal'
@@ -537,6 +547,7 @@ export function Sparkline({
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 3 }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -582,8 +593,11 @@ export function MiniProgress({
       >
         <div
           aria-hidden="true"
-          className="h-full rounded-full transition-[width]"
-          style={{ width: `${value}%`, backgroundColor: chartColor(colorKey) }}
+          className="motion-progress-fill h-full rounded-full"
+          style={{
+          transform: `scaleX(${value / 100})`,
+          backgroundColor: chartColor(colorKey),
+          }}
         />
       </div>
       {showValue && (

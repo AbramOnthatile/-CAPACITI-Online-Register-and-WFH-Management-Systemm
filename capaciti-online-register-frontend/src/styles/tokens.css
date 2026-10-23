@@ -48,6 +48,18 @@
   --radius-card: 12px;
   --radius-control: 10px;
   --shadow-card: 0 8px 24px rgba(27, 36, 71, 0.08);
+  --shadow-raised: 0 12px 32px rgba(27, 36, 71, 0.12);
+  --shadow-glow-primary: 0 0 24px rgb(var(--color-primary-500-rgb) / 0.3);
+  --gradient-hero: linear-gradient(
+    135deg,
+    var(--color-primary-600),
+    var(--color-primary-500)
+  );
+  --gradient-ink: linear-gradient(
+    135deg,
+    var(--color-ink-900),
+    var(--color-ink-700)
+  );
   --font-display: 'Sora', sans-serif;
   --font-sans: 'Figtree', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;

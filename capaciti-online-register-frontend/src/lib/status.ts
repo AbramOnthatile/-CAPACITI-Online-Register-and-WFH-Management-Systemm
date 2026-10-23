@@ -66,6 +66,9 @@ export const workMode = {
   WFH: { label: 'Work from home', tone: 'info', icon: icons.mode.wfh },
 } satisfies Record<string, StatusItem>;
 
+export type ArrivalStatus = keyof typeof arrivalStatus;
+export type WorkMode = keyof typeof workMode;
+
 export type ChartColorKey =
   | 'ON_TIME'
   | 'LATE_UNEXCUSED'

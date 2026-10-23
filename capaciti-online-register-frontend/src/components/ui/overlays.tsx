@@ -37,6 +37,7 @@ function DialogSurface({
   const id = useId();
   const dialogRef = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
+  const touchStartY = useRef<number | null>(null);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -102,7 +103,7 @@ function DialogSurface({
 
   const dialog = (
     <div
-      className={`fixed inset-0 z-50 flex bg-ink-900/40 ${sheet ? 'items-end justify-center px-0 sm:items-center sm:px-4' : 'items-center justify-center px-4 py-6'}`}
+      className={`motion-backdrop-enter fixed inset-0 z-50 flex bg-ink-900/40 ${sheet ? 'items-end justify-center px-0 sm:items-center sm:px-4' : 'items-center justify-center px-4 py-6'}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -116,8 +117,27 @@ function DialogSurface({
         aria-labelledby={`${id}-title`}
         aria-describedby={description ? `${id}-description` : undefined}
         tabIndex={-1}
-        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden border border-border bg-card shadow-soft focus:outline-none ${sheet ? 'rounded-t-card sm:max-w-lg sm:rounded-card' : 'max-w-lg rounded-card'}`}
+        className={`flex max-h-[90dvh] w-full flex-col overflow-hidden border border-border bg-card shadow-soft focus:outline-none ${sheet ? 'motion-slide-up rounded-t-card sm:max-w-lg sm:rounded-card sm:motion-scale-in' : 'motion-scale-in max-w-lg rounded-card'}`}
       >
+        {sheet && (
+          <div
+            aria-hidden="true"
+            className="flex min-h-8 touch-none items-center justify-center sm:hidden"
+            onTouchStart={(event) => {
+              touchStartY.current = event.touches[0]?.clientY ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const startY = touchStartY.current;
+              const endY = event.changedTouches[0]?.clientY;
+              touchStartY.current = null;
+              if (startY !== null && endY !== undefined && endY - startY > 80) {
+                onCloseRef.current();
+              }
+            }}
+          >
+            <span className="h-1 w-10 rounded-full bg-ink-300" />
+          </div>
+        )}
         <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
           <div className="min-w-0">
             <h2 id={`${id}-title`} className="font-display text-lg font-semibold text-ink-900">
@@ -204,7 +224,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     (toast: ToastOptions) => {
       const id = nextId.current + 1;
       nextId.current = id;
-      const entry: ToastEntry = { tone: 'info', duration: 5000, ...toast, id };
+      const entry: ToastEntry = { tone: 'info', duration: 4000, ...toast, id };
       setToasts((current) => [...current, entry]);
       if (entry.duration && entry.duration > 0) {
         const timerId = window.setTimeout(() => dismissToast(id), entry.duration);
@@ -226,7 +246,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       <div
-        className="safe-area-bottom fixed inset-x-3 bottom-3 z-[60] flex flex-col gap-2 sm:inset-x-auto sm:right-4 sm:w-96"
+        className="fixed inset-x-3 top-3 z-[60] flex flex-col gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:w-96"
         aria-label="Notifications"
         aria-live="polite"
       >
@@ -236,7 +256,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
             <div
               key={toast.id}
               role={tone.role}
-              className="flex items-start justify-between gap-3 rounded-card border border-border bg-card p-4 shadow-soft"
+              className="motion-toast-enter relative flex items-start justify-between gap-3 overflow-hidden rounded-card border border-border bg-card p-4 shadow-soft"
             >
               <div className="min-w-0">
                 <Badge tone={tone.badge}>{toast.title}</Badge>
@@ -252,6 +272,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
               >
                 <icons.close aria-hidden="true" className="h-4 w-4" />
               </button>
+              {toast.duration !== undefined && toast.duration > 0 && (
+                <span
+                  aria-hidden="true"
+                  className={`motion-toast-progress absolute inset-x-0 bottom-0 h-1 origin-left ${toast.tone === 'success' ? 'bg-success' : toast.tone === 'warning' ? 'bg-warning' : toast.tone === 'danger' ? 'bg-danger' : 'bg-info'}`}
+                  style={{ animationDuration: `${toast.duration}ms` }}
+                />
+              )}
             </div>
           );
         })}

@@ -1,5 +1,7 @@
 import {
   AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
   BarChart3,
   Building2,
   CalendarCheck2,
@@ -56,4 +58,6 @@ export const icons = {
   menu: Menu,
   logout: LogOut,
   refresh: RefreshCw,
+  trendUp: ArrowUpRight,
+  trendDown: ArrowDownRight,
 } as const;

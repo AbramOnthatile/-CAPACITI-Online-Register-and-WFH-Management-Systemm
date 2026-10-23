@@ -6,12 +6,12 @@ import type { StatusTone } from '../../lib/status';
 import { Button } from './button';
 
 const toneClasses: Record<StatusTone, string> = {
-  primary: 'border-primary-100 bg-primary-50 text-primary-700',
-  success: 'border-success-soft bg-success-soft text-success',
-  warning: 'border-warning-soft bg-warning-soft text-warning',
-  danger: 'border-danger-soft bg-danger-soft text-danger',
-  info: 'border-info-soft bg-info-soft text-info',
-  neutral: 'border-border bg-surface text-ink-700',
+  primary: 'border-transparent bg-primary-50 text-primary-700',
+  success: 'border-transparent bg-success-soft text-success',
+  warning: 'border-transparent bg-warning-soft text-warning',
+  danger: 'border-transparent bg-danger-soft text-danger',
+  info: 'border-transparent bg-info-soft text-info',
+  neutral: 'border-transparent bg-surface text-ink-700',
 };
 
 export type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
@@ -30,9 +30,15 @@ export function Badge({
   return (
     <span
       {...props}
-      className={`inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClasses[tone]} ${className}`}
+      className={`inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-semibold ${toneClasses[tone]} ${className}`}
     >
-      {Icon && <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />}
+      <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+      {Icon && (
+        <Icon
+          aria-hidden="true"
+          className={`h-3.5 w-3.5 shrink-0 ${tone === 'success' ? 'motion-draw-check' : ''}`}
+        />
+      )}
       {children}
     </span>
   );
@@ -92,7 +98,7 @@ export function Skeleton({
     <div
       {...props}
       aria-hidden="true"
-      className={`animate-pulse bg-border ${skeletonVariants[variant]} ${className}`}
+      className={`motion-shimmer bg-border ${skeletonVariants[variant]} ${className}`}
     />
   );
 }
@@ -117,9 +123,20 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={`flex flex-col items-center px-4 py-10 text-center ${className}`}>
+      <span aria-hidden="true" className="relative mb-4 flex h-20 w-24 items-center justify-center text-primary-500">
+        <svg viewBox="0 0 96 80" fill="none" className="h-full w-full">
+          <path d="M12 62.5h72" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <rect x="23" y="17" width="50" height="42" rx="7" className="fill-primary-50 stroke-primary-100" strokeWidth="2" />
+          <path d="M34 31h28M34 39h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="65" cy="55" r="11" className="fill-card stroke-primary-500" strokeWidth="2" />
+          <path d="m61 55 3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="18" cy="24" r="2" className="fill-primary-100" />
+          <circle cx="79" cy="16" r="2" className="fill-primary-100" />
+        </svg>
+      </span>
       {Icon && (
-        <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-600">
-          <Icon aria-hidden="true" className="h-6 w-6" />
+        <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+          <Icon aria-hidden="true" className="h-5 w-5" />
         </span>
       )}
       <h3 className="text-base font-semibold text-ink-900">{title}</h3>
@@ -154,7 +171,7 @@ export function ErrorState({
       role="alert"
     >
       <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-danger-soft text-danger">
-        <icons.alert aria-hidden="true" className="h-6 w-6" />
+        <icons.alert aria-hidden="true" className="motion-shake h-6 w-6" />
       </span>
       <h3 className="text-base font-semibold text-ink-900">{title}</h3>
       <p className="mt-1 max-w-md text-sm text-ink-500">{description}</p>
@@ -215,8 +232,8 @@ export function ProgressBar({
       >
         <div
           aria-hidden="true"
-          className={`h-full rounded-full transition-[width] ${progressTones[tone]}`}
-          style={{ width: `${roundedValue}%` }}
+          className={`motion-progress-fill h-full rounded-full ${progressTones[tone]}`}
+          style={{ transform: `scaleX(${percentage / 100})` }}
         />
       </div>
     </div>

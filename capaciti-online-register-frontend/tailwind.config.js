@@ -44,6 +44,11 @@ export default {
       },
       boxShadow: {
         soft: 'var(--shadow-card)',
+        'glow-primary': 'var(--shadow-glow-primary)',
+      },
+      backgroundImage: {
+        'gradient-hero': 'var(--gradient-hero)',
+        'gradient-ink': 'var(--gradient-ink)',
       },
       borderRadius: {
         card: 'var(--radius-card)',

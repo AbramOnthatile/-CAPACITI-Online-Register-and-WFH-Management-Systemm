@@ -38,15 +38,15 @@ export function Button({
       type={props.type ?? 'button'}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-control font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`motion-interactive relative inline-flex min-h-11 items-center justify-center gap-2 rounded-control font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {loading && (
         <span
           aria-hidden="true"
-          className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+          className="motion-spinner absolute h-4 w-4 rounded-full border-2 border-current border-r-transparent"
         />
       )}
-      {children}
+      <span className={loading ? 'invisible' : ''}>{children}</span>
     </button>
   );
 }
@@ -65,12 +65,24 @@ const cardPadding: Record<NonNullable<CardProps['padding']>, string> = {
 export function Card({
   padding = 'md',
   className = '',
+  onClick,
+  role,
+  tabIndex,
   ...props
 }: CardProps) {
+  const isInteractive =
+    onClick !== undefined ||
+    role === 'button' ||
+    role === 'link' ||
+    tabIndex !== undefined;
+
   return (
     <div
+      onClick={onClick}
+      role={role}
+      tabIndex={tabIndex}
       {...props}
-      className={`rounded-card border border-border bg-card shadow-soft ${cardPadding[padding]} ${className}`}
+      className={`rounded-card border border-border bg-card shadow-soft ${isInteractive ? 'card-interactive' : ''} ${cardPadding[padding]} ${className}`}
     />
   );
 }
