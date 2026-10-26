@@ -18,6 +18,7 @@ import ChampionWFHRequests from './pages/champion/WFHRequests';
 import WFHReview from './pages/champion/WFHReview';
 import ChampionCheckIns from './pages/champion/CheckIns';
 import ChampionReports from './pages/champion/Reports';
+import ChampionAnnouncements from './pages/champion/Announcements';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import BlockersTickets from './pages/admin/BlockersTickets';
@@ -85,6 +86,7 @@ function App() {
           <Route path="wfh/:id" element={<WFHReview />} />
           <Route path="progress" element={<ChampionCheckIns />} />
           <Route path="reports" element={<ChampionReports />} />
+          <Route path="announcements" element={<ChampionAnnouncements />} />
         </Route>
 
         {/* Executive Administration */}

@@ -342,7 +342,9 @@ export function useWfhRequestsApi(userId?: string, enabled = true) {
   };
   const decide = async (id: string, decision: WfhDecision) => {
     if (useMocks) {
-      query.replaceData(query.data.map((item) => item.id === id
+      const requests = persistence.load();
+      if (!requests.some((item) => item.id === id)) throw new Error('The WFH request could not be found.');
+      query.replaceData(requests.map((item) => item.id === id
         ? {
           ...item,
           status: decision.status,

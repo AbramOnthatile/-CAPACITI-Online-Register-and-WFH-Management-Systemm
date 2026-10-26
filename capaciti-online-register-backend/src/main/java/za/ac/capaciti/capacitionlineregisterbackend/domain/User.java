@@ -27,6 +27,9 @@ public class User extends BaseEntity {
     @Column(name = "role", nullable = false)
     private String role;
 
+    @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
+    private boolean active = true;
+
     public String getFullName() {
         return firstName + " " + lastName;
     }
