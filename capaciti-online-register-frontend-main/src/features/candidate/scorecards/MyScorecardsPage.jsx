@@ -22,7 +22,8 @@ const scoreClasses = {
 };
 
 const MyScorecardsPage = () => {
-  const scorecards = useMyScorecards().slice().sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate));
+  const { scorecards: loadedScorecards, loading, error } = useMyScorecards();
+  const scorecards = loadedScorecards.slice().sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate));
   const chartData = scorecards.slice().reverse().map((scorecard) => ({
     title: scorecard.title,
     date: scorecard.assessmentDate,
@@ -37,7 +38,10 @@ const MyScorecardsPage = () => {
         <p className="mt-1 text-xs leading-relaxed text-slate-500">Review your submitted feedback and track your progress over time.</p>
       </header>
 
-      {scorecards.length === 0 ? (
+      {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error.message}</p>}
+      {loading ? (
+        <p role="status" className="rounded-xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-500">Loading your scorecards...</p>
+      ) : error ? null : scorecards.length === 0 ? (
         <Card title="Your scorecards will appear here">
           <div className="flex flex-col items-center py-6 text-center">
             <Award className="h-8 w-8 text-slate-300" />
