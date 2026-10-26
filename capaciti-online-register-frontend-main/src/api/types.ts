@@ -134,7 +134,7 @@ export interface DailyPrompt {
   submittedAt: string | null;
   attemptCount: number;
   aiQualityFlag: boolean;
-  response: string | null;
+  response: Record<string, unknown> | null;
 }
 
 export interface SupportTicket {
@@ -174,21 +174,21 @@ export interface ApiErrorEnvelope {
 }
 
 export interface PromptSubmission {
-  draftKey: string;
-  response: string;
+  deliverables?: string[];
+  standupConfirmed?: boolean;
+  powerStatus?: 'STABLE' | 'UNSTABLE' | 'DOWN';
+  ispStatus?: 'STABLE' | 'UNSTABLE' | 'DOWN';
+  progressStatus?: 'ON_TRACK' | 'DELAYED' | 'BLOCKED';
+  blockerNote?: string;
+  workLink?: string;
 }
 
 export interface PromptSubmissionResult {
-  id: string;
-  status: PromptStatus;
-  submittedAt: string;
-  attemptCount: number;
-  aiQualityFlag: boolean;
-  response: string;
+  prompt: DailyPrompt;
   quality: {
     accepted: boolean;
     isValid: boolean;
-    feedbackMessage: string;
+    feedbackMessage: string | null;
     attempt: number;
     flagged: boolean;
   };

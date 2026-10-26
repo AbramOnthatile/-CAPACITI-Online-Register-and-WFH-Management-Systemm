@@ -151,6 +151,7 @@ export const AppProvider = ({ children }) => {
     prompts: promptsApi.today.data.prompts,
     promptServerTime: promptsApi.today.data.serverTime,
     activePrompts: promptsApi.active.data.prompts,
+    activePromptServerTime: promptsApi.active.data.serverTime,
     submitPrompt: promptsApi.submit,
     tickets: ticketsApi.data,
     ticketsLoading: ticketsApi.loading,

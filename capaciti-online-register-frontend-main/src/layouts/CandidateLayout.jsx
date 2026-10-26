@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 import BrandLogo from '../components/common/BrandLogo';
 import TopBar from '../components/common/TopBar';
+import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
 
 const navItems = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: LayoutDashboard },
@@ -158,6 +159,7 @@ export const CandidateLayout = () => {
           <Outlet />
         </main>
       </div>
+      <PromptCheckInPopup />
     </div>
   );
 };
