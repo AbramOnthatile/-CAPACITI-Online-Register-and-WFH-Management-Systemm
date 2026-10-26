@@ -10,6 +10,7 @@ import {
   LogOut,
   MapPin,
   LifeBuoy,
+  Ellipsis,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
@@ -25,6 +26,7 @@ const navItems = [
   { label: 'Notifications', to: '/candidate/notifications', icon: Bell },
   { label: 'Support Tickets', to: '/candidate/support', icon: LifeBuoy },
   { label: 'My Profile', to: '/candidate/profile', icon: User },
+  { label: 'More', to: '/candidate/more', icon: Ellipsis },
 ];
 
 const Sidebar = ({ mobileOpen, onClose, onLogout, user }) => {
@@ -127,6 +129,8 @@ export const CandidateLayout = () => {
     if (path.includes('notifications')) return { title: 'Notifications', subtitle: 'Programme announcements and request updates' };
     if (path.includes('support')) return { title: 'Support Tickets', subtitle: 'Create and track your support requests' };
     if (path.includes('profile')) return { title: 'My Profile', subtitle: 'Account and campus details' };
+    if (path.includes('scorecards')) return { title: 'My Scorecards', subtitle: 'Assessment results and mentor feedback' };
+    if (path.includes('more')) return { title: 'More', subtitle: 'Learning resources and account tools' };
     return { title: 'Candidate Portal', subtitle: 'CAPACITI Workforce Management' };
   };
 

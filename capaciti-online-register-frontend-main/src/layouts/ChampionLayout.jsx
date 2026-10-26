@@ -9,6 +9,7 @@ import {
   LogOut,
   ShieldCheck,
   Megaphone,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
@@ -24,6 +25,7 @@ const navItems = [
   { label: 'Check-ins', to: '/champion/progress', icon: CheckCircle2 },
   { label: 'Reports', to: '/champion/reports', icon: BarChart3 },
   { label: 'Announcements', to: '/champion/announcements', icon: Megaphone },
+  { label: 'Scorecards', to: '/champion/scorecards', icon: ClipboardList },
 ];
 
 const Sidebar = ({ mobileOpen, onClose, onLogout, user }) => {
@@ -121,6 +123,7 @@ export const ChampionLayout = () => {
     if (path.includes('progress')) return { title: 'Check-ins', subtitle: 'Review candidate check-in responses' };
     if (path.includes('reports')) return { title: 'Attendance & WFH Reports', subtitle: 'Attendance records and work-mode summaries' };
     if (path.includes('announcements')) return { title: 'Candidate Announcements', subtitle: 'Send updates to all active candidates' };
+    if (path.includes('scorecards')) return { title: 'Mentor Scorecards', subtitle: 'Assess candidate progress and performance' };
     return { title: 'Tech Champion Panel', subtitle: 'CAPACITI Workforce Management' };
   };
 
