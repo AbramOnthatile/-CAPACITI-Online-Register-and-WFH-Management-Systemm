@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Award, ChartNoAxesColumnIncreasing } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Card from '../../../components/common/Card';
+import PageHeader from '../../../components/common/PageHeader';
+import Alert from '../../../components/common/Alert';
+import EmptyState from '../../../components/common/EmptyState';
 import { percentTone, scoreCriteria } from '../../../lib/scoring';
 import { useMyScorecards } from './useMyScorecards';
 
@@ -31,24 +34,19 @@ const MyScorecardsPage = () => {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5">
-      <header>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#6115D0]">My Learning Progress</p>
-        <h2 className="mt-1 text-2xl font-black text-[#1D2951]">Scorecards</h2>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">Review your submitted feedback and track your progress over time.</p>
-      </header>
+    <div className="page-narrow">
+      <PageHeader eyebrow="My learning progress" title="Scorecards" description="Review your submitted feedback and track your progress over time." />
 
-      {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error.message}</p>}
+      <Alert>{error?.message}</Alert>
       {loading ? (
-        <p role="status" className="rounded-xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-500">Loading your scorecards...</p>
+        <p role="status" className="surface surface-pad text-center text-sm text-slate-500">Loading your scorecards...</p>
       ) : error ? null : scorecards.length === 0 ? (
-        <Card title="Your scorecards will appear here">
-          <div className="flex flex-col items-center py-6 text-center">
-            <Award className="h-8 w-8 text-slate-300" />
-            <p className="mt-3 max-w-sm text-sm font-semibold text-[#1D2951]">No submitted scorecards yet</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">When your mentor shares a completed assessment, you’ll be able to review your scores and feedback here.</p>
-          </div>
-        </Card>
+        <EmptyState
+          icon={Award}
+          title="No submitted scorecards yet"
+          description="When your mentor shares a completed assessment, you'll be able to review your scores and feedback here."
+          className="bg-white"
+        />
       ) : (
         <>
           {scorecards.length >= 2 && (
@@ -69,34 +67,37 @@ const MyScorecardsPage = () => {
 
           <section className="space-y-3" aria-labelledby="my-scorecards-heading">
             <div className="flex items-center gap-2 px-1">
-              <ChartNoAxesColumnIncreasing className="h-4 w-4 text-[#6115D0]" />
-              <h3 id="my-scorecards-heading" className="text-sm font-bold text-[#1D2951]">Submitted assessments</h3>
+              <ChartNoAxesColumnIncreasing className="h-4 w-4 text-primary-600" />
+              <h3 id="my-scorecards-heading" className="section-title">Submitted assessments</h3>
             </div>
-            {scorecards.map((scorecard) => (
-              <Link
-                key={scorecard.assessmentId}
-                to={`/candidate/scorecards/${encodeURIComponent(scorecard.assessmentId)}`}
-                className="block rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-colors hover:border-[#6115D0]/40 focus:outline-none focus:ring-2 focus:ring-[#6115D0]/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="break-words text-sm font-bold leading-snug text-[#1D2951]">{scorecard.title}</h4>
-                    <p className="mt-1.5 text-[11px] text-slate-500">{scorecard.type === 'WEEKLY' ? 'Weekly assessment' : 'Project assessment'} · {scorecard.assessmentDate}</p>
-                  </div>
-                  <span className={`shrink-0 rounded-xl px-3 py-1.5 text-sm font-black ${percentClasses[percentTone(scorecard.overallPercent)]}`}>{scorecard.overallPercent}%</span>
-                </div>
-                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                  <div className="flex flex-wrap gap-1.5" aria-label="Score summary">
-                    {scoreCriteria.map(({ key, label }) => (
-                      <span key={key} aria-label={`${label}: ${scorecard.scores[key]} out of 5`} className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${scoreClasses[percentTone(scorecard.scores[key] * 20)]}`}>
-                        {scorecard.scores[key]}/5
-                      </span>
-                    ))}
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[#6115D0]">Details<ArrowRight className="h-3.5 w-3.5" /></span>
-                </div>
-              </Link>
-            ))}
+            <ul className="list">
+              {scorecards.map((scorecard) => (
+                <li key={scorecard.assessmentId}>
+                  <Link
+                    to={`/candidate/scorecards/${encodeURIComponent(scorecard.assessmentId)}`}
+                    className="surface surface-interactive block p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="break-words text-sm font-bold leading-snug text-navy">{scorecard.title}</h4>
+                        <p className="mt-1 text-xs text-slate-500">{scorecard.type === 'WEEKLY' ? 'Weekly assessment' : 'Project assessment'} · {scorecard.assessmentDate}</p>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-3 py-1 font-mono text-sm font-extrabold ${percentClasses[percentTone(scorecard.overallPercent)]}`}>{scorecard.overallPercent}%</span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                      <div className="flex flex-wrap gap-1.5" aria-label="Score summary">
+                        {scoreCriteria.map(({ key, label }) => (
+                          <span key={key} aria-label={`${label}: ${scorecard.scores[key]} out of 5`} className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold ${scoreClasses[percentTone(scorecard.scores[key] * 20)]}`}>
+                            {scorecard.scores[key]}/5
+                          </span>
+                        ))}
+                      </div>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-primary-600">Details<ArrowRight className="h-3.5 w-3.5" /></span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
         </>
       )}

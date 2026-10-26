@@ -4,8 +4,19 @@ import { Clock, Bell, Menu, Shield, GraduationCap, Award, LogOut, ChevronDown, U
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../api/types';
+import Avatar from './Avatar';
 
-const TopBar = ({ onOpenMenu, title, subtitle }) => {
+const roleBadges = {
+  [UserRole.CANDIDATE]: { label: 'Candidate', icon: GraduationCap, style: 'border-primary-600/20 bg-primary-600/10 text-primary-600' },
+  [UserRole.TECH_CHAMP]: { label: 'Tech Champion', icon: Award, style: 'border-navy/20 bg-navy/10 text-navy' },
+  [UserRole.ADMIN]: { label: 'Administrator', icon: Shield, style: 'border-salmon/20 bg-salmon/10 text-salmon' },
+};
+
+/**
+ * Sticky app header. `mobileTabs` switches the phone layout to an app-style bar
+ * (brand icon + title, no hamburger) because navigation lives in the bottom tab bar.
+ */
+const TopBar = ({ onOpenMenu, title, subtitle, mobileTabs = false }) => {
   const { user, logout } = useAuth();
   const { notifications } = useApp();
   const navigate = useNavigate();
@@ -19,7 +30,6 @@ const TopBar = ({ onOpenMenu, title, subtitle }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -49,135 +59,96 @@ const TopBar = ({ onOpenMenu, title, subtitle }) => {
     month: 'short',
   }).format(currentTime);
 
-  const getRoleBadge = () => {
-    if (user?.role === UserRole.CANDIDATE) {
-      return {
-        label: 'Candidate',
-        icon: GraduationCap,
-        style: 'bg-[#6115D0]/10 text-[#6115D0] border-[#6115D0]/20',
-      };
-    }
-    if (user?.role === UserRole.TECH_CHAMP) {
-      return {
-        label: 'Tech Champion',
-        icon: Award,
-        style: 'bg-[#1D2951]/10 text-[#1D2951] border-[#1D2951]/20',
-      };
-    }
-    return {
-      label: 'Administrator',
-      icon: Shield,
-      style: 'bg-[#F25251]/10 text-[#F25251] border-[#F25251]/20',
-    };
-  };
-
-  const roleBadge = getRoleBadge();
+  const roleBadge = roleBadges[user?.role] ?? roleBadges[UserRole.ADMIN];
   const RoleIcon = roleBadge.icon;
+  const hasUnread = notifications.some((item) => !item.read);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md sm:px-6 md:px-8">
-      {/* Left: Mobile Toggle & Context Title */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          className="rounded-xl border border-slate-200 p-2 text-[#1D2951] hover:bg-slate-100 md:hidden"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-
-        <div>
-          <h1 className="text-base font-bold tracking-tight text-[#1D2951] sm:text-lg leading-tight">
-            {title || 'Dashboard'}
-          </h1>
-          {subtitle && (
-            <p className="hidden text-xs font-medium text-slate-500 sm:block">{subtitle}</p>
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+      <div className="flex h-14 items-center justify-between gap-3 px-4 sm:h-16 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-3">
+          {mobileTabs ? (
+            <img src="/images/capaciti-icon.svg" alt="" className="h-8 w-8 shrink-0 object-contain md:hidden" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          ) : (
+            <button type="button" onClick={onOpenMenu} className="icon-btn h-9 w-9 md:hidden" aria-label="Open menu">
+              <Menu className="h-5 w-5" />
+            </button>
           )}
-        </div>
-      </div>
-
-      {/* Center: Live Digital Clock (SAST) */}
-      <div className="hidden items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-1.5 text-xs text-slate-700 lg:flex">
-        <Clock className="h-3.5 w-3.5 text-[#6115D0]" />
-        <span className="font-semibold">{formattedDate}</span>
-        <span className="text-slate-300">|</span>
-        <span className="font-mono tabular-nums font-bold text-[#1D2951]">{formattedTime} SAST</span>
-      </div>
-
-      {/* Right: Notifications & User Profile Menu */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Role Tag */}
-        <div
-          className={`hidden sm:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold ${roleBadge.style}`}
-        >
-          <RoleIcon className="h-3.5 w-3.5" />
-          <span>{roleBadge.label}</span>
+          <div className="min-w-0">
+            <h1 className="truncate text-base font-bold leading-tight text-navy sm:text-lg">{title || 'Dashboard'}</h1>
+            {subtitle && <p className="hidden truncate text-xs text-slate-500 sm:block">{subtitle}</p>}
+          </div>
         </div>
 
-        {/* Notifications (Candidate only) */}
-        {user?.role === UserRole.CANDIDATE && (
-          <Link
-            to="/candidate/notifications"
-            className="relative rounded-xl border border-slate-200 p-2 text-slate-600 hover:border-[#6115D0] hover:text-[#6115D0]"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-            {notifications.some((item) => !item.read) && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#F25251]" />}
-          </Link>
-        )}
+        <div className="hidden items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-700 lg:flex">
+          <Clock className="h-3.5 w-3.5 text-primary-600" />
+          <span className="font-semibold">{formattedDate}</span>
+          <span className="text-slate-300">|</span>
+          <span className="font-mono font-bold tabular-nums text-navy">{formattedTime} SAST</span>
+        </div>
 
-        {/* User Profile Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setProfileDropdownOpen((prev) => !prev)}
-            className="flex items-center gap-2 rounded-xl border border-transparent p-1 hover:border-slate-200 hover:bg-slate-50 transition-all text-left"
-          >
-            <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-[#1D2951] shrink-0">
-              <div className="flex h-full w-full items-center justify-center text-xs font-bold text-white">
-                {user?.fullName?.split(/\s+/).map((name) => name[0]).join('').slice(0, 2)}
-              </div>
-            </div>
-            <div className="hidden text-left xl:block">
-              <p className="text-xs font-bold text-[#1D2951] leading-none">{user?.fullName}</p>
-              <p className="text-[10px] font-medium text-slate-400 mt-0.5">{roleBadge.label}</p>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400 hidden xl:block" />
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`pill hidden sm:inline-flex ${roleBadge.style}`}>
+            <RoleIcon className="h-3 w-3" />
+            {roleBadge.label}
+          </span>
 
-          {/* Dropdown Menu */}
-          {profileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl animate-in fade-in zoom-in-95 duration-100 z-50">
-              <div className="p-3 border-b border-slate-100">
-                <p className="text-xs font-bold text-[#1D2951] truncate">{user?.fullName}</p>
-                <p className="text-[11px] text-slate-400 truncate font-mono mt-0.5">{user?.email}</p>
-                <span className="mt-2 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 uppercase">
-                  {roleBadge.label}
-                </span>
-              </div>
-
-              {user?.role === UserRole.CANDIDATE && (
-                <Link
-                  to="/candidate/profile"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  <User className="h-4 w-4 text-slate-400" />
-                  <span>View Trainee Profile</span>
-                </Link>
-              )}
-
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
-              </button>
-            </div>
+          {user?.role === UserRole.CANDIDATE && (
+            <Link to="/candidate/notifications" className="icon-btn relative h-9 w-9" aria-label={hasUnread ? 'Notifications (unread)' : 'Notifications'}>
+              <Bell className="h-4 w-4" />
+              {hasUnread && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-salmon ring-2 ring-white" />}
+            </Link>
           )}
+
+          <div className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setProfileDropdownOpen((prev) => !prev)}
+              className="flex items-center gap-2 rounded-xl p-0.5 transition-colors hover:bg-slate-100 xl:pr-2"
+              aria-haspopup="menu"
+              aria-expanded={profileDropdownOpen}
+              aria-label="Account menu"
+            >
+              <Avatar name={user?.fullName} size="sm" className="h-9 w-9" />
+              <span className="hidden text-left xl:block">
+                <span className="block text-xs font-bold leading-none text-navy">{user?.fullName}</span>
+                <span className="mt-0.5 block text-[10px] text-slate-400">{roleBadge.label}</span>
+              </span>
+              <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 xl:block" />
+            </button>
+
+            {profileDropdownOpen && (
+              <div role="menu" className="surface absolute right-0 z-50 mt-2 w-64 p-1.5" style={{ boxShadow: 'var(--shadow-raised)' }}>
+                <div className="border-b border-slate-100 p-3">
+                  <p className="truncate text-sm font-bold text-navy">{user?.fullName}</p>
+                  <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">{user?.email}</p>
+                  <span className={`pill mt-2 ${roleBadge.style}`}>{roleBadge.label}</span>
+                </div>
+                <div className="pt-1.5">
+                  {user?.role === UserRole.CANDIDATE && (
+                    <Link
+                      to="/candidate/profile"
+                      role="menuitem"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <User className="h-4 w-4 text-slate-400" />
+                      My profile
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

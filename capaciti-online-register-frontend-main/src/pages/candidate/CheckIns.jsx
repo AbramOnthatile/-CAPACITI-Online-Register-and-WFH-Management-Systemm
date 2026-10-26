@@ -5,6 +5,8 @@ import { getStatusMetadata } from '../../lib/status';
 import { useApp } from '../../context/AppContext';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
 
 const stages = [PromptStage.MORNING_KICKOFF, PromptStage.MIDDAY_PULSE, PromptStage.EOD_WRAP_UP];
 
@@ -56,60 +58,52 @@ const CheckIns = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Candidate Check-ins</span>
-          <span className="text-slate-300">·</span>
-          <span className="text-xs text-slate-500 font-medium">Daily Prompts</span>
-        </div>
-        {promptsError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{promptsError.message}</p>}
-        <h2 className="mt-1 text-2xl sm:text-3xl font-black text-[#1D2951]">Check-ins</h2>
-        <p className="mt-1 text-xs text-slate-500">Server time: {formatServerTime(promptServerTime)}</p>
-      </div>
+    <div className="page-narrow">
+      <PageHeader eyebrow="Daily prompts" title="Check-ins" description={`Server time: ${formatServerTime(promptServerTime)}`} />
 
-      {stages.map((stage) => {
+      <Alert>{promptsError?.message}</Alert>
+
+      {stages.map((stage, index) => {
         const prompt = prompts.find((item) => item.stage === stage);
         const stageLabel = getStatusMetadata(stage).label;
+        const active = prompt?.status === PromptStatus.ACTIVE;
         return (
-          <Card key={stage} title={stageLabel} subtitle={prompt ? `Scheduled ${formatServerTime(prompt.scheduledAt)}` : 'No prompt scheduled'}>
+          <Card
+            key={stage}
+            title={<span className="flex items-center gap-2.5"><span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold ${active ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{index + 1}</span>{stageLabel}</span>}
+            subtitle={prompt ? `Scheduled ${formatServerTime(prompt.scheduledAt)}` : 'No prompt scheduled'}
+            actions={prompt && <StatusBadge status={prompt.status} />}
+            className={active ? 'border-primary-600/30' : ''}
+          >
             {prompt ? (
               <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <StatusBadge status={prompt.status} />
-                  {prompt.expiresAt && (
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
-                      <Clock className="h-3.5 w-3.5" /> Expires in {formatCountdown(prompt.expiresAt)}
-                    </span>
-                  )}
-                </div>
-                <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">{stageLabel} response</span>
+                {prompt.expiresAt && active && (
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                    <Clock className="h-3.5 w-3.5 text-primary-600" />Expires in <span className="font-mono text-navy">{formatCountdown(prompt.expiresAt)}</span>
+                  </p>
+                )}
+                <label className="field">
+                  <span className="field-label">Your response</span>
                   <textarea
                     rows="3"
-                    className="input text-xs"
+                    className="input"
                     value={responses[prompt.id] ?? prompt.response ?? ''}
-                    disabled={prompt.status !== PromptStatus.ACTIVE}
+                    disabled={!active}
+                    placeholder={active ? `Share your ${stageLabel.toLowerCase()} update...` : ''}
                     onChange={(event) => setResponses((current) => ({ ...current, [prompt.id]: event.target.value }))}
                   />
                 </label>
-                {errors[prompt.id] && <p role="alert" className="text-xs text-rose-600">{errors[prompt.id]}</p>}
-                {submitted[prompt.id] && (
-                  <p className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
-                    <CheckCircle2 className="h-4 w-4" /> {submitted[prompt.id]}
-                  </p>
-                )}
-                {prompt.status === PromptStatus.ACTIVE && (
-                  <button
-                    type="button"
-                    onClick={() => void handleSubmit(prompt)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#6115D0] py-3 text-xs font-bold text-white shadow-md hover:bg-[#4F11AA] transition-all"
-                  >
-                    <Send className="h-4 w-4" /> Submit Check-in
+                <Alert>{errors[prompt.id]}</Alert>
+                {submitted[prompt.id] && <Alert tone="success">{submitted[prompt.id]}</Alert>}
+                {active && (
+                  <button type="button" onClick={() => void handleSubmit(prompt)} className="btn btn-primary btn-block">
+                    <Send className="h-4 w-4" />Submit check-in
                   </button>
                 )}
               </div>
-            ) : <p className="text-xs text-slate-500">This prompt is not available.</p>}
+            ) : (
+              <p className="flex items-center gap-2 text-sm text-slate-500"><CheckCircle2 className="h-4 w-4 text-slate-300" />This prompt is not available.</p>
+            )}
           </Card>
         );
       })}

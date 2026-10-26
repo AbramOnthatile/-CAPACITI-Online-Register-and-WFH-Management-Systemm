@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Award } from 'lucide-react';
 import Card from '../../../components/common/Card';
+import Alert from '../../../components/common/Alert';
+import PageHeader from '../../../components/common/PageHeader';
 import { percentTone, scoreCriteria, scoreTone } from '../../../lib/scoring';
 import { useMyScorecards } from './useMyScorecards';
 
@@ -12,6 +14,12 @@ const toneClasses = {
   orange: 'border-orange-200 bg-orange-50 text-orange-800',
   danger: 'border-rose-200 bg-rose-50 text-rose-800',
 };
+
+const feedbackSections = [
+  { key: 'feedbackStrengths', title: 'Strengths', empty: 'No strengths feedback was provided.' },
+  { key: 'feedbackImprovements', title: 'Areas to improve', empty: 'No improvement feedback was provided.' },
+  { key: 'feedback', title: 'General feedback', empty: 'No additional feedback was provided.' },
+];
 
 const ScorecardDetailPage = () => {
   const { assessmentId } = useParams();
@@ -32,73 +40,68 @@ const ScorecardDetailPage = () => {
   }, [assessmentId, getScorecard]);
 
   if (loading) {
-    return <p role="status" className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-500">Loading scorecard...</p>;
+    return <div className="page-narrow"><p role="status" className="surface surface-pad text-center text-sm text-slate-500">Loading scorecard...</p></div>;
   }
   if (!scorecard) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 text-center">
+      <div className="page-narrow">
         <Card title={error ? 'Scorecard could not be loaded' : 'Scorecard unavailable'}>
-          <p role={error ? 'alert' : undefined} className="text-xs leading-relaxed text-slate-600">{error?.message || 'This scorecard is not available in your account.'}</p>
-          <Link to="/candidate/scorecards" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#6115D0]"><ArrowLeft className="h-4 w-4" />Back to my scorecards</Link>
+          <Alert tone={error ? 'error' : 'info'}>{error?.message || 'This scorecard is not available in your account.'}</Alert>
+          <Link to="/candidate/scorecards" className="btn btn-secondary mt-4"><ArrowLeft className="h-4 w-4" />Back to my scorecards</Link>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5">
-      <Link to="/candidate/scorecards" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6115D0] hover:underline"><ArrowLeft className="h-4 w-4" />My scorecards</Link>
+    <div className="page-narrow">
+      <PageHeader
+        backTo="/candidate/scorecards"
+        backLabel="Back to my scorecards"
+        eyebrow={scorecard.type === 'WEEKLY' ? 'Weekly assessment' : 'Project assessment'}
+        title={scorecard.title}
+        description={`Assessment date · ${scorecard.assessmentDate}`}
+      />
 
-      <header className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#6115D0]">{scorecard.type === 'WEEKLY' ? 'Weekly assessment' : 'Project assessment'}</p>
-        <h2 className="mt-1 break-words text-xl font-black leading-tight text-[#1D2951] sm:text-2xl">{scorecard.title}</h2>
-        <p className="mt-1.5 text-xs text-slate-500">Assessment date · {scorecard.assessmentDate}</p>
-        <div className="mt-4 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-          <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 text-lg font-black ${toneClasses[percentTone(scorecard.overallPercent)]}`}>
-            {scorecard.overallPercent}%
-          </div>
-          <div>
-            <p className="text-sm font-bold text-[#1D2951]">Overall score</p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">Your average across six assessment criteria.</p>
-          </div>
+      <section className="surface surface-pad flex items-center gap-4">
+        <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 font-mono text-lg font-extrabold ${toneClasses[percentTone(scorecard.overallPercent)]}`}>
+          {scorecard.overallPercent}%
         </div>
-      </header>
+        <div>
+          <p className="text-sm font-bold text-navy">Overall score</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-slate-500">Your average across six assessment criteria.</p>
+        </div>
+      </section>
 
       <Card title="Your scores" subtitle="Each criterion is scored from 1 to 5">
-        <div className="space-y-2">
+        <ul className="list">
           {scoreCriteria.map(({ key, label }) => {
             const score = scorecard.scores[key];
             return (
-              <div key={key} className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${toneClasses[scoreTone(score)]}`}>
-                <span className="min-w-0 text-xs font-semibold">{label}</span>
-                <span className="shrink-0 rounded-lg bg-white/70 px-2.5 py-1 text-xs font-black">{score} / 5</span>
-              </div>
+              <li key={key} className={`flex items-center justify-between gap-3 rounded-xl border p-3.5 ${toneClasses[scoreTone(score)]}`}>
+                <span className="min-w-0 text-sm font-semibold">{label}</span>
+                <span className="shrink-0 rounded-full bg-white/70 px-2.5 py-0.5 font-mono text-xs font-extrabold">{score} / 5</span>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </Card>
 
       <Card title="Feedback">
-        <div className="space-y-4">
-          <section>
-            <h3 className="text-xs font-bold text-[#1D2951]">Strengths</h3>
-            <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{scorecard.feedbackStrengths || 'No strengths feedback was provided.'}</p>
-          </section>
-          <section className="border-t border-slate-100 pt-4">
-            <h3 className="text-xs font-bold text-[#1D2951]">Areas to improve</h3>
-            <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{scorecard.feedbackImprovements || 'No improvement feedback was provided.'}</p>
-          </section>
-          <section className="border-t border-slate-100 pt-4">
-            <h3 className="text-xs font-bold text-[#1D2951]">General feedback</h3>
-            <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{scorecard.feedback || 'No additional feedback was provided.'}</p>
-          </section>
+        <div className="divide-y divide-slate-100">
+          {feedbackSections.map(({ key, title, empty }) => (
+            <section key={key} className="py-4 first:pt-0 last:pb-0">
+              <h3 className="text-sm font-bold text-navy">{title}</h3>
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{scorecard[key] || empty}</p>
+            </section>
+          ))}
         </div>
       </Card>
 
-      <Card title="Group feedback" subtitle="Your mentor’s notes for the cohort">
+      <Card title="Group feedback" subtitle="Your mentor's notes for the cohort">
         <div className="flex items-start gap-3">
-          <Award className="mt-0.5 h-4 w-4 shrink-0 text-[#6115D0]" />
-          <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-600">{scorecard.groupFeedback || 'No group feedback was provided.'}</p>
+          <Award className="mt-0.5 h-4 w-4 shrink-0 text-primary-600" />
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{scorecard.groupFeedback || 'No group feedback was provided.'}</p>
         </div>
       </Card>
     </div>
