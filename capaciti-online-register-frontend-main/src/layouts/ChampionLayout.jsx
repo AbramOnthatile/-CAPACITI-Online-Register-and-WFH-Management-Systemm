@@ -13,14 +13,11 @@ import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 import BrandLogo from '../components/common/BrandLogo';
 import TopBar from '../components/common/TopBar';
-import StatusBadge from '../components/common/StatusBadge';
-import { WfhStatus } from '../api/types';
-import { demoOnly } from '../mocks/demoOnly';
 import { getStatusMetadata } from '../lib/status';
 
 const navItems = [
   { label: 'Overview', to: '/champion/dashboard', icon: LayoutDashboard },
-  { label: 'Candidates', to: '/champion/candidates', icon: Users, mockOnly: true },
+  { label: 'Candidates', to: '/champion/candidates', icon: Users },
   { label: 'Live Monitor', to: '/champion/attendance', icon: Clock3 },
   { label: 'WFH Review', to: '/champion/wfh', icon: FileText },
   { label: 'Check-ins', to: '/champion/progress', icon: CheckCircle2 },
@@ -53,35 +50,26 @@ const Sidebar = ({ mobileOpen, onClose, onLogout, user }) => {
           </span>
         </div>
         <p className="mt-1 text-xs font-bold text-[#1D2951] truncate">{user?.fullName ?? ''}</p>
-        {/* MOCK-ONLY: not in backend */}
-        <p className="mt-0.5 text-[11px] text-slate-500" title={demoOnly.notice}>{demoOnly.championSidebarCaption} <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge></p>
+        <p className="mt-0.5 text-[11px] text-slate-500">Managing your assigned cohort</p>
       </div>
 
       <nav className="mt-4 flex-1 space-y-1 px-3 overflow-y-auto">
-        {navItems.map(({ label, to, icon: Icon, mockOnly }) => (
-          mockOnly ? (
-            <div key={label} className="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-600" title={demoOnly.notice}>
-              <span className="flex items-center gap-3"><Icon className="h-4 w-4 shrink-0" />{label}</span>
-              {/* MOCK-ONLY: not in backend */}
-              <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-            </div>
-          ) : (
-            <NavLink
-              key={label}
-              to={to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-[#1D2951] text-white shadow-sm shadow-[#1D2951]/20'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-[#1D2951]'
-                }`
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{label}</span>
-            </NavLink>
-          )
+        {navItems.map(({ label, to, icon: Icon }) => (
+          <NavLink
+            key={label}
+            to={to}
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all ${
+                isActive
+                  ? 'bg-[#1D2951] text-white shadow-sm shadow-[#1D2951]/20'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-[#1D2951]'
+              }`
+            }
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span>{label}</span>
+          </NavLink>
         ))}
       </nav>
 
@@ -125,10 +113,10 @@ export const ChampionLayout = () => {
   const getPageInfo = () => {
     const path = location.pathname;
     if (path.includes('dashboard')) return { title: 'Tech Champion Command', subtitle: 'Real-time candidate oversight & performance monitoring' };
-    if (path.includes('candidates')) return { title: 'Candidate Directory', subtitle: 'Demo directory not connected' };
+    if (path.includes('candidates')) return { title: 'Candidate Directory', subtitle: 'View your assigned candidates' };
     if (path.includes('attendance')) return { title: 'Live Attendance Monitor', subtitle: 'Track recorded clock-ins and attendance statuses' };
     if (path.includes('wfh')) return { title: 'WFH Review Queue', subtitle: 'Review and approve remote working requests' };
-    if (path.includes('progress')) return { title: 'Check-ins', subtitle: 'Demo-only check-in review' };
+    if (path.includes('progress')) return { title: 'Check-ins', subtitle: 'Review candidate check-in responses' };
     if (path.includes('reports')) return { title: 'Attendance & WFH Reports', subtitle: 'Attendance records and work-mode summaries' };
     return { title: 'Tech Champion Panel', subtitle: 'CAPACITI Workforce Management' };
   };

@@ -1,10 +1,11 @@
 import NotificationList from '../../components/common/NotificationList';
 import Card from '../../components/common/Card';
-import StatusBadge from '../../components/common/StatusBadge';
-import { WfhStatus } from '../../api/types';
-import { demoOnly } from '../../mocks/demoOnly';
+import { useApp } from '../../context/AppContext';
 
 const Notifications = () => {
+  const { notifications, markNotificationRead } = useApp();
+  const unreadCount = notifications.filter((item) => !item.read).length;
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
@@ -18,9 +19,8 @@ const Notifications = () => {
         <h2 className="mt-1 text-2xl sm:text-3xl font-black text-[#1D2951]">Notifications</h2>
       </div>
 
-      {/* MOCK-ONLY: not in backend */}
-      <Card title="Activity & Announcements" subtitle="Traineeship updates and supervisor notifications" actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>}>
-        <NotificationList notifications={demoOnly.sampleNotifications} />
+      <Card title="Activity & Announcements" subtitle={`${unreadCount} unread update${unreadCount === 1 ? '' : 's'}`}>
+        <NotificationList notifications={notifications} onMarkRead={markNotificationRead} />
       </Card>
     </div>
   );

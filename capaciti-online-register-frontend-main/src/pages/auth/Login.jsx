@@ -7,6 +7,7 @@ import { UserRole, WfhStatus } from '../../api/types';
 import StatusBadge from '../../components/common/StatusBadge';
 import { demoOnly } from '../../mocks/demoOnly';
 import { useMocks } from '../../api/mockMode';
+import { useApp } from '../../context/AppContext';
 
 const rolePath = {
   [UserRole.CANDIDATE]: '/candidate/dashboard',
@@ -18,14 +19,19 @@ const iconByRole = {
   [UserRole.TECH_CHAMP]: Award,
   [UserRole.ADMIN]: Shield,
 };
-const demoAccounts = demoOnly.demoAccounts.map((account) => ({
-  ...account,
-  icon: iconByRole[account.role],
-}));
-
 const Login = () => {
   const navigate = useNavigate();
   const { user, login, loading: authLoading, error: authError } = useAuth();
+  const { users } = useApp();
+  const demoAccounts = demoOnly.demoAccounts.map((account) => {
+    const currentUser = users.find((item) => item.role === account.role);
+    return {
+      ...account,
+      email: currentUser?.email ?? account.email,
+      name: currentUser?.fullName ?? account.name,
+      icon: iconByRole[account.role],
+    };
+  });
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -92,6 +92,13 @@ export interface AttendanceRecord {
   geoVerified: boolean;
   distanceM: number | null;
   aiQualityFlag: boolean;
+  breaks?: AttendanceBreak[];
+}
+
+export interface AttendanceBreak {
+  type: 'TEA' | 'LUNCH';
+  startedAt: string;
+  endedAt: string | null;
 }
 
 export interface WfhReadiness {

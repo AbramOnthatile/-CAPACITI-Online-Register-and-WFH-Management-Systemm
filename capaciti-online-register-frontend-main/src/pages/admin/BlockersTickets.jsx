@@ -5,7 +5,6 @@ import { useApp } from '../../context/AppContext';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import { getStatusMetadata } from '../../lib/status';
-import { demoOnly } from '../../mocks/demoOnly';
 
 const BlockersTickets = () => {
   const { tickets, ticketsLoading, ticketsError, resolveTicket } = useApp();
@@ -60,7 +59,8 @@ const BlockersTickets = () => {
             </div>
             <div className="my-3 space-y-2 text-xs leading-relaxed text-slate-700">
               <p>{ticket.description}</p>
-              <p className="flex items-center gap-2 text-slate-400"><StatusBadge status={ticket.workMode} />{ticket.ageMinutes} minutes old</p>
+              <p className="flex items-center gap-2 text-slate-400"><StatusBadge status={ticket.workMode} />{Math.max(0, Math.floor((Date.now() - Date.parse(ticket.createdAt)) / 60000))} minutes old</p>
+              {ticket.attachmentUrl && <a href={ticket.attachmentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#6115D0] hover:underline">View attachment</a>}
             </div>
             {ticket.status === TicketStatus.OPEN ? (
               <div className="space-y-3 border-t border-slate-100 pt-3">
@@ -85,19 +85,6 @@ const BlockersTickets = () => {
         {!ticketsLoading && !tickets.length && <Card title="No tickets"><p className="text-xs text-slate-500">There are no support tickets to display.</p></Card>}
       </div>
 
-      {/* MOCK-ONLY: not in backend */}
-      <Card title="Demo Escalation Queue" subtitle="Illustrative cases; these items are not connected" actions={<StatusBadge status={TicketStatus.OPEN}>Demo</StatusBadge>}>
-        <div className="space-y-3">
-          {demoOnly.escalationQueue.map((item) => (
-            <article key={item.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-4" title={demoOnly.notice}>
-              <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold text-[#1D2951]">{item.title}</h3><StatusBadge status={TicketStatus.OPEN}>Demo</StatusBadge></div>
-              <p className="mt-2 text-xs text-slate-600">{item.reason}</p>
-              {/* MOCK-ONLY: not in backend */}
-              <div className="mt-3 flex justify-end"><button type="button" disabled aria-disabled="true" title={demoOnly.notice} className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white opacity-60">Mark as Resolved <StatusBadge status={TicketStatus.OPEN}>Demo</StatusBadge></button></div>
-            </article>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 };

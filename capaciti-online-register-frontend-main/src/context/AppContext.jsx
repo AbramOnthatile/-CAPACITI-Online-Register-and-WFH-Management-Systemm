@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { UserRole } from '../api/types';
 import {
   useAttendanceApi,
@@ -11,7 +11,9 @@ import {
   useUsersApi,
   useWfhRequestsApi,
 } from '../api/hooks';
-import { demoOnly } from '../mocks/demoOnly';
+import { mockCheckinReviews, mockNotifications } from '../mocks/entities';
+import { readMockCollection, writeMockValue } from '../mocks/storage';
+import { useMocks } from '../api/mockMode';
 import { useAuth } from './AuthContext';
 
 const AppContext = createContext(null);
@@ -21,15 +23,39 @@ export const AppProvider = ({ children }) => {
   const isAdmin = user?.role === UserRole.ADMIN;
   const isCandidate = user?.role === UserRole.CANDIDATE;
   const isChampion = user?.role === UserRole.TECH_CHAMP;
-  const usersApi = useUsersApi(isAdmin);
+  const usersApi = useUsersApi(isAdmin || (useMocks && Boolean(user)));
   const attendanceApi = useAttendanceApi(isCandidate ? user?.id : undefined, Boolean(user));
   const wfhApi = useWfhRequestsApi(isCandidate ? user?.id : undefined, Boolean(user));
-  const promptsApi = usePromptsApi(isCandidate);
+  const promptsApi = usePromptsApi(isCandidate, user?.id);
   const ticketsApi = useTicketsApi(isCandidate ? user?.id : undefined, Boolean(user));
   const auditApi = useAuditApi(isAdmin);
   const campusesApi = useCampusesApi();
   const dashboardApi = useDashboardApi(isCandidate ? UserRole.CANDIDATE : UserRole.TECH_CHAMP, isCandidate || isChampion);
   const reportsApi = useReportsApi(isAdmin || isChampion);
+  const [notifications, setNotifications] = useState(() => readMockCollection('notifications', mockNotifications));
+  const [checkinReviews, setCheckinReviews] = useState(() => readMockCollection('checkin-reviews', mockCheckinReviews));
+
+  useEffect(() => {
+    const syncMockData = (event) => {
+      if (event.detail === 'notifications') setNotifications(readMockCollection('notifications', mockNotifications));
+      if (event.detail === 'checkin-reviews') setCheckinReviews(readMockCollection('checkin-reviews', mockCheckinReviews));
+    };
+    window.addEventListener('capaciti-demo:update', syncMockData);
+    return () => window.removeEventListener('capaciti-demo:update', syncMockData);
+  }, []);
+
+  const markNotificationRead = useCallback((id) => {
+    const updated = notifications.map((item) => item.id === id ? { ...item, read: true } : item);
+    writeMockValue('notifications', updated);
+    setNotifications(updated);
+  }, [notifications]);
+
+  const saveCheckinFeedback = useCallback((id, feedbackComment) => {
+    const updated = checkinReviews.map((item) => item.id === id ? { ...item, feedbackComment } : item);
+    if (!checkinReviews.some((item) => item.id === id)) throw new Error('The check-in review could not be found.');
+    writeMockValue('checkin-reviews', updated);
+    setCheckinReviews(updated);
+  }, [checkinReviews]);
 
   const value = useMemo(() => ({
     users: usersApi.data,
@@ -44,6 +70,8 @@ export const AppProvider = ({ children }) => {
     attendanceError: attendanceApi.records.error || attendanceApi.today.error,
     clockIn: attendanceApi.clockIn,
     clockOut: attendanceApi.clockOut,
+    startBreak: attendanceApi.startBreak,
+    endBreak: attendanceApi.endBreak,
     wfh: wfhApi.data,
     wfhLoading: wfhApi.loading,
     wfhError: wfhApi.error,
@@ -72,8 +100,12 @@ export const AppProvider = ({ children }) => {
     attendanceSummary: reportsApi.attendanceSummary.data,
     wfhSummary: reportsApi.wfhSummary.data,
     reportsError: reportsApi.overview.error || reportsApi.attendanceSummary.error || reportsApi.wfhSummary.error,
-    demoOnly,
-  }), [usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi]);
+    notifications,
+    markNotificationRead,
+    checkinReviews,
+    saveCheckinFeedback,
+    isDemoMode: useMocks,
+  }), [usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi, notifications, checkinReviews, markNotificationRead, saveCheckinFeedback]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

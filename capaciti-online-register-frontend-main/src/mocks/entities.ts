@@ -163,43 +163,48 @@ export const mockWfhRequests: WfhRequest[] = [
   },
 ];
 
-export const mockPrompts: DailyPrompt[] = [
-  {
-    id: 'prompt-1',
-    stage: PromptStage.MORNING_KICKOFF,
-    promptDate: '2026-10-23',
-    scheduledAt: '2026-10-23T08:00:00+02:00',
-    expiresAt: '2026-10-23T10:00:00+02:00',
+export const getSastDate = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
+
+export const createMockPrompts = (): DailyPrompt[] => {
+  const todayDate = getSastDate();
+  const promptExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  return [
+    PromptStage.MORNING_KICKOFF,
+    PromptStage.MIDDAY_PULSE,
+    PromptStage.EOD_WRAP_UP,
+  ].map((stage, index) => ({
+    id: `prompt-${index + 1}`,
+    stage,
+    promptDate: todayDate,
+    scheduledAt: new Date().toISOString(),
+    expiresAt: promptExpiry,
     status: PromptStatus.ACTIVE,
     submittedAt: null,
     attemptCount: 0,
     aiQualityFlag: false,
     response: null,
-  },
-  {
-    id: 'prompt-2',
-    stage: PromptStage.MIDDAY_PULSE,
-    promptDate: '2026-10-23',
-    scheduledAt: '2026-10-23T12:00:00+02:00',
-    expiresAt: '2026-10-23T14:00:00+02:00',
-    status: PromptStatus.SCHEDULED,
-    submittedAt: null,
-    attemptCount: 0,
-    aiQualityFlag: false,
-    response: null,
-  },
-  {
-    id: 'prompt-3',
-    stage: PromptStage.EOD_WRAP_UP,
-    promptDate: '2026-10-23',
-    scheduledAt: '2026-10-23T15:00:00+02:00',
-    expiresAt: '2026-10-23T17:00:00+02:00',
-    status: PromptStatus.SCHEDULED,
-    submittedAt: null,
-    attemptCount: 0,
-    aiQualityFlag: false,
-    response: null,
-  },
+  }));
+};
+
+export const mockPrompts: DailyPrompt[] = createMockPrompts();
+
+export const mockNotifications = [
+  { id: 'notice-1', title: 'Daily standup reminder', message: 'Daily standup begins at 09:15.', timestamp: new Date().toISOString(), type: 'Reminder', read: false },
+  { id: 'notice-2', title: 'Welcome to CAPACITI', message: 'Use your dashboard to record attendance, submit check-ins, and manage WFH requests.', timestamp: new Date().toISOString(), type: 'Announcement', read: true },
+];
+
+export interface MockCheckinReview {
+  id: string;
+  userName: string;
+  stage: PromptStage;
+  promptDate: string;
+  response: string;
+  feedbackComment: string;
+}
+
+export const mockCheckinReviews: MockCheckinReview[] = [
+  { id: 'review-1', userName: 'Aphiwe Ndlovu', stage: PromptStage.EOD_WRAP_UP, promptDate: getSastDate(), response: 'Completed the API integration work and noted one access blocker.', feedbackComment: '' },
+  { id: 'review-2', userName: 'Mpho Mokoena', stage: PromptStage.MIDDAY_PULSE, promptDate: getSastDate(), response: 'Progressing on the assigned data work.', feedbackComment: '' },
 ];
 
 export const mockTickets: SupportTicket[] = [

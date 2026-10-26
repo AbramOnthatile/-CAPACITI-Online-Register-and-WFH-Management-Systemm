@@ -6,8 +6,8 @@ import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
-import { demoOnly } from '../../mocks/demoOnly';
 import { getStatusMetadata } from '../../lib/status';
+import { countWfhDaysForWeek, getCurrentWeekStart, weeklyWfhLimit } from '../../lib/wfhPolicy';
 
 const filters = ['ALL', ...Object.values(WfhStatus)];
 
@@ -17,6 +17,8 @@ const WFHRequests = () => {
   const [tab, setTab] = useState('ALL');
   const mine = useMemo(() => wfh.filter((item) => item.userId === user?.id), [wfh, user?.id]);
   const filtered = tab === 'ALL' ? mine : mine.filter((item) => item.status === tab);
+  const reservedDaysThisWeek = countWfhDaysForWeek(mine, getCurrentWeekStart());
+  const remainingDays = Math.max(0, weeklyWfhLimit - reservedDaysThisWeek);
 
   return (
     <div className="space-y-6">
@@ -38,11 +40,9 @@ const WFHRequests = () => {
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Weekly Policy Allowance</p>
-            {/* MOCK-ONLY: not in backend */}
-            <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
           </div>
-          <p className="mt-1 font-mono text-2xl font-black text-[#1D2951]">{demoOnly.weeklyAllowance}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">Policy display only</p>
+          <p className="mt-1 font-mono text-2xl font-black text-[#1D2951]">{remainingDays} day{remainingDays === 1 ? '' : 's'} remaining</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">{reservedDaysThisWeek} of {weeklyWfhLimit} weekdays reserved this week</p>
         </div>
         <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved Requests</p>

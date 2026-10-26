@@ -1,6 +1,4 @@
-import { Bell, Check, Clock, Info } from 'lucide-react';
-import StatusBadge from './StatusBadge';
-import { WfhStatus } from '../../api/types';
+import { Bell, Check } from 'lucide-react';
 
 const NotificationList = ({ notifications = [], onMarkRead, compact = false }) => {
   if (!notifications.length) {
@@ -26,8 +24,6 @@ const NotificationList = ({ notifications = [], onMarkRead, compact = false }) =
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h4 className="text-xs font-bold text-[#1D2951]">{item.title}</h4>
-              {/* MOCK-ONLY: not in backend */}
-              <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
               {!item.read && (
                 <span className="flex h-2 w-2 rounded-full bg-[#F25251]" title="Unread" />
               )}

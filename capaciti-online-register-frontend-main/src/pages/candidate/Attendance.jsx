@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Coffee, UtensilsCrossed, CheckCircle2, Building2, Home, Info } from 'lucide-react';
-import { WorkMode, WfhStatus } from '../../api/types';
+import { WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
-import { demoOnly } from '../../mocks/demoOnly';
 
 const formatSast = (value) => value
   ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
@@ -14,10 +13,11 @@ const formatSast = (value) => value
 
 const Attendance = () => {
   const { user } = useAuth();
-  const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut } = useApp();
+  const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut, startBreak, endBreak, isDemoMode } = useApp();
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
+  const [selectedMode, setSelectedMode] = useState(user?.defaultMode ?? WorkMode.ON_SITE);
   const record = attendanceToday;
   const hasClockedIn = Boolean(record?.clockInAt);
   const hasClockedOut = Boolean(record?.clockOutAt);
@@ -26,7 +26,7 @@ const Attendance = () => {
     setWorking(true);
     setError('');
     try {
-      if (confirmation === 'clock-in') await clockIn(user?.defaultMode ?? WorkMode.ON_SITE);
+      if (confirmation === 'clock-in') await clockIn(selectedMode);
       if (confirmation === 'clock-out') await clockOut();
       setConfirmation(null);
     } catch (actionError) {
@@ -48,13 +48,12 @@ const Attendance = () => {
           <h2 className="mt-1 text-2xl font-black text-[#1D2951]">Today's Attendance</h2>
         </div>
 
-        {/* MOCK-ONLY: not in backend */}
-        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm" title={demoOnly.notice}>
-          <button type="button" disabled aria-disabled="true" title={demoOnly.notice} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-500 opacity-70">
-            <Building2 className="h-3.5 w-3.5" /><span>On-site</span><StatusBadge status={WorkMode.ON_SITE}>Demo</StatusBadge>
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm" aria-label="Choose today's work mode">
+          <button type="button" disabled={hasClockedIn} onClick={() => setSelectedMode(WorkMode.ON_SITE)} className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedMode === WorkMode.ON_SITE ? 'bg-[#1D2951] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+            <Building2 className="h-3.5 w-3.5" /><span>On-site</span>
           </button>
-          <button type="button" disabled aria-disabled="true" title={demoOnly.notice} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-500 opacity-70">
-            <Home className="h-3.5 w-3.5" /><span>WFH</span><StatusBadge status={WorkMode.WFH}>Demo</StatusBadge>
+          <button type="button" disabled={hasClockedIn} onClick={() => setSelectedMode(WorkMode.WFH)} className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${selectedMode === WorkMode.WFH ? 'bg-[#6115D0] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+            <Home className="h-3.5 w-3.5" /><span>WFH</span>
           </button>
         </div>
       </div>
@@ -90,14 +89,20 @@ const Attendance = () => {
                 )}
                 {hasClockedIn && !hasClockedOut && (
                   <>
-                    {/* MOCK-ONLY: not in backend */}
-                    <button type="button" disabled aria-disabled="true" title={demoOnly.notice} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-500 opacity-70">
-                      <Coffee className="h-4 w-4 text-[#F25251]" /><span>Start Tea Break</span><StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-                    </button>
-                    {/* MOCK-ONLY: not in backend */}
-                    <button type="button" disabled aria-disabled="true" title={demoOnly.notice} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-500 opacity-70">
-                      <UtensilsCrossed className="h-4 w-4 text-[#6115D0]" /><span>Start Lunch</span><StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-                    </button>
+                    {isDemoMode && (record?.breaks?.some((item) => !item.endedAt) ? (
+                      <button type="button" onClick={() => { setWorking(true); setError(''); try { endBreak(); } catch (actionError) { setError(actionError instanceof Error ? actionError.message : 'The break could not be ended.'); } finally { setWorking(false); } }} disabled={working} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                        <Clock className="h-4 w-4" /><span>End {record.breaks.find((item) => !item.endedAt)?.type === 'TEA' ? 'Tea' : 'Lunch'} Break</span>
+                      </button>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => { setWorking(true); setError(''); try { startBreak('TEA'); } catch (actionError) { setError(actionError instanceof Error ? actionError.message : 'The break could not be started.'); } finally { setWorking(false); } }} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                          <Coffee className="h-4 w-4 text-[#F25251]" /><span>Start Tea Break</span>
+                        </button>
+                        <button type="button" onClick={() => { setWorking(true); setError(''); try { startBreak('LUNCH'); } catch (actionError) { setError(actionError instanceof Error ? actionError.message : 'The break could not be started.'); } finally { setWorking(false); } }} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                          <UtensilsCrossed className="h-4 w-4 text-[#6115D0]" /><span>Start Lunch</span>
+                        </button>
+                      </>
+                    ))}
                     <button type="button" onClick={() => setConfirmation('clock-out')} className="flex items-center gap-2 rounded-xl bg-[#1D2951] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#0F172A] shadow-sm transition-all">
                       <span>Clock Out</span>
                     </button>
@@ -127,14 +132,19 @@ const Attendance = () => {
                   <StatusBadge status={record.departureStatus} />
                 </div>
               )}
+              {record?.breaks?.map((breakEntry, index) => (
+                <div key={`${breakEntry.startedAt}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-100 p-3 text-xs">
+                  <span className="font-semibold text-[#1D2951]">{breakEntry.type === 'TEA' ? 'Tea break' : 'Lunch break'}</span>
+                  <span className="font-mono text-slate-600">{formatSast(breakEntry.startedAt)} – {formatSast(breakEntry.endedAt)}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* MOCK-ONLY: not in backend */}
-          <Card title="Attendance guidance" subtitle="Demo policy information" actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>}>
+          <Card title="Attendance guidance" subtitle="Daily register policy">
             <div className="flex items-start gap-2.5 text-xs text-slate-600">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6115D0]" />
-              <p>{demoOnly.attendanceGuidance}</p>
+              <p>Choose the work mode that applies today, clock in when your workday begins, record breaks as they happen, and clock out when you finish.</p>
             </div>
           </Card>
         </div>

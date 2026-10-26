@@ -11,6 +11,7 @@ const initialReadiness = {
   quietWorkspace: false,
   laptopReady: false,
 };
+const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
 
 const NewWFHRequest = () => {
   const navigate = useNavigate();
@@ -59,11 +60,11 @@ const NewWFHRequest = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Start date</span>
-              <input type="date" required className="input text-xs" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} />
+              <input type="date" required min={today} className="input text-xs" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">End date</span>
-              <input type="date" required className="input text-xs" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} />
+              <input type="date" required min={form.startDate || today} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className="input text-xs" />
             </label>
           </div>
 

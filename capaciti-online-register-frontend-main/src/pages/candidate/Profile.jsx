@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { WorkMode, WfhStatus } from '../../api/types';
-import { demoOnly } from '../../mocks/demoOnly';
+import { WorkMode } from '../../api/types';
 import { getStatusMetadata } from '../../lib/status';
+import { readMockValue, writeMockValue } from '../../mocks/storage';
 import Card from '../../components/common/Card';
-import StatusBadge from '../../components/common/StatusBadge';
 import { MapPin, Building2, Award, CheckCircle2, Shield } from 'lucide-react';
 
 const initials = (name = '') => name.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2);
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateCurrentUser } = useAuth();
   const { updateUser } = useApp();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +18,11 @@ const Profile = () => {
     fullName: user?.fullName ?? '',
     email: user?.email ?? '',
   });
+  const [profileData, setProfileData] = useState(() => readMockValue(`profile:${user?.id}`, {
+    phone: '',
+    emergencyContact: '',
+    location: '',
+  }));
 
   const handleSave = async (event) => {
     event.preventDefault();
@@ -26,6 +30,8 @@ const Profile = () => {
     setError('');
     try {
       await updateUser(user.id, { fullName: formData.fullName, email: formData.email });
+      updateCurrentUser({ fullName: formData.fullName, email: formData.email });
+      writeMockValue(`profile:${user.id}`, profileData);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (saveError) {
@@ -86,7 +92,7 @@ const Profile = () => {
         </div>
 
         <div className="lg:col-span-8">
-          <Card title="Account Information" subtitle="Update your account name and email">
+          <Card title="Account Information" subtitle="Update your account and contact details">
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -113,30 +119,20 @@ const Profile = () => {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Contact Number</label>
-                    {/* MOCK-ONLY: not in backend */}
-                    <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-                  </div>
-                  <input type="text" value={demoOnly.profile.phone} readOnly aria-disabled="true" title={demoOnly.notice} className="input text-xs opacity-70" />
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">Contact Number</label>
+                  <input type="tel" value={profileData.phone} onChange={(event) => setProfileData({ ...profileData, phone: event.target.value })} className="input text-xs" />
                 </div>
                 <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">Emergency Contact</label>
-                    {/* MOCK-ONLY: not in backend */}
-                    <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-                  </div>
-                  <input type="text" value={demoOnly.profile.emergencyContact} readOnly aria-disabled="true" title={demoOnly.notice} className="input text-xs opacity-70" />
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">Emergency Contact</label>
+                  <input type="text" value={profileData.emergencyContact} onChange={(event) => setProfileData({ ...profileData, emergencyContact: event.target.value })} className="input text-xs" />
                 </div>
               </div>
 
-              {/* MOCK-ONLY: not in backend */}
-              <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600">
+              <label className="block rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs text-slate-600">
                 <MapPin className="h-4 w-4 text-slate-400" />
-                <span>{demoOnly.profile.location}</span>
-                {/* MOCK-ONLY: not in backend */}
-                <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-              </div>
+                <span className="ml-2">Home location</span>
+                <input type="text" value={profileData.location} onChange={(event) => setProfileData({ ...profileData, location: event.target.value })} className="input mt-2 text-xs" />
+              </label>
 
               <div className="flex justify-end pt-2">
                 <button type="submit" className="rounded-xl bg-[#6115D0] px-6 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4F11AA] transition-all">

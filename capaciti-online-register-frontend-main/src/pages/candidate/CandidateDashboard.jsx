@@ -15,6 +15,7 @@ const CandidateDashboard = () => {
   const [action, setAction] = useState('');
   const [actionError, setActionError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [selectedMode, setSelectedMode] = useState(user?.defaultMode ?? WorkMode.ON_SITE);
 
   useEffect(() => {
     const timer = window.setInterval(() => setServerElapsedSeconds((seconds) => seconds + 1), 1000);
@@ -38,7 +39,7 @@ const CandidateDashboard = () => {
   const candidateWfh = wfh.filter((request) => request.userId === user?.id);
   const approvedWfh = candidateWfh.filter((request) => request.status === WfhStatus.APPROVED);
   const nextPrompt = prompts.find((prompt) => prompt.status === PromptStatus.ACTIVE);
-  const currentMode = attendanceToday?.workMode ?? user?.defaultMode ?? WorkMode.ON_SITE;
+  const currentMode = attendanceToday?.workMode ?? selectedMode;
   const clockedIn = Boolean(attendanceToday?.clockInAt);
   const clockedOut = Boolean(attendanceToday?.clockOutAt);
 
@@ -69,13 +70,12 @@ const CandidateDashboard = () => {
           <p className="mt-0.5 text-sm text-slate-600">{clockedIn && !clockedOut ? 'You are currently clocked in.' : 'Review your attendance and scheduled check-ins.'}</p>
         </div>
 
-        {/* MOCK-ONLY: not in backend */}
-        <div className="flex items-center self-start rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm" title="Demo only, not connected">
-          <button type="button" disabled aria-disabled="true" title="Demo only, not connected" className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold opacity-60 ${currentMode === WorkMode.ON_SITE ? 'bg-[#1D2951] text-white shadow-sm' : 'text-slate-600'}`}>
-            <Building2 className="h-4 w-4 text-[#F25251]" /><span>On-site</span><StatusBadge status={WorkMode.ON_SITE}>Demo</StatusBadge>
+        <div className="flex items-center self-start rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm" aria-label="Choose today's work mode">
+          <button type="button" disabled={Boolean(attendanceToday)} onClick={() => setSelectedMode(WorkMode.ON_SITE)} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${currentMode === WorkMode.ON_SITE ? 'bg-[#1D2951] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
+            <Building2 className="h-4 w-4 text-[#F25251]" /><span>On-site</span>
           </button>
-          <button type="button" disabled aria-disabled="true" title="Demo only, not connected" className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold opacity-60 ${currentMode === WorkMode.WFH ? 'bg-[#6115D0] text-white shadow-sm' : 'text-slate-600'}`}>
-            <Home className="h-4 w-4" /><span>WFH</span><StatusBadge status={WorkMode.WFH}>Demo</StatusBadge>
+          <button type="button" disabled={Boolean(attendanceToday)} onClick={() => setSelectedMode(WorkMode.WFH)} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${currentMode === WorkMode.WFH ? 'bg-[#6115D0] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
+            <Home className="h-4 w-4" /><span>WFH</span>
           </button>
         </div>
       </div>
@@ -118,7 +118,7 @@ const CandidateDashboard = () => {
             <div className="space-y-3">
               {Object.values(PromptStage).map((stage) => {
                 const prompt = prompts.find((item) => item.stage === stage);
-                return <div key={stage} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-xs font-bold text-[#1D2951]">{getStatusMetadata(stage).label}</p>{prompt && <p className="mt-1 text-[10px] text-slate-400">Expires {new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(prompt.expiresAt))}</p>}</div>{prompt ? <StatusBadge status={prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}</div>;
+                return <div key={stage} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-xs font-bold text-[#1D2951]">{getStatusMetadata(stage).label}</p>{prompt && <p className="mt-1 text-[10px] text-slate-400">Expires {new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(prompt.expiresAt))}</p>}</div>{prompt ? <StatusBadge status={prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}</div>;
               })}
               <Link to="/candidate/progress" className="flex items-center justify-between pt-1 text-xs font-bold text-[#6115D0] hover:underline"><span>{nextPrompt?.status === PromptStatus.ACTIVE ? 'Submit an active check-in' : 'View all check-ins'}</span><ArrowRight className="h-4 w-4" /></Link>
             </div>
@@ -130,6 +130,7 @@ const CandidateDashboard = () => {
               {!wfhLoading && candidateWfh.length === 0 && <p className="text-xs text-slate-400">No WFH requests found.</p>}
               <p className="flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500"><Calendar className="h-4 w-4 text-[#6115D0]" />{approvedWfh.length} approved request{approvedWfh.length === 1 ? '' : 's'}</p>
               <Link to="/candidate/wfh/new" className="flex items-center justify-center gap-2 rounded-xl border border-[#6115D0]/20 py-2 text-xs font-bold text-[#6115D0] hover:bg-[#6115D0]/5"><Send className="h-3.5 w-3.5" />Apply for WFH</Link>
+              <Link to="/candidate/support" className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:border-[#6115D0] hover:text-[#6115D0]">Get support</Link>
             </div>
           </Card>
         </div>

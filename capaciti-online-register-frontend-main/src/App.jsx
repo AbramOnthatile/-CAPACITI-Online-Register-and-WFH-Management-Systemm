@@ -8,6 +8,7 @@ import NewWFHRequest from './pages/candidate/NewWFHRequest';
 import WFHDetails from './pages/candidate/WFHDetails';
 import CandidateCheckIns from './pages/candidate/CheckIns';
 import Notifications from './pages/candidate/Notifications';
+import SupportTickets from './pages/candidate/SupportTickets';
 import Profile from './pages/candidate/Profile';
 import ChampionDashboard from './pages/champion/ChampionDashboard';
 import Candidates from './pages/champion/Candidates';
@@ -63,6 +64,7 @@ function App() {
           <Route path="wfh/:id" element={<WFHDetails />} />
           <Route path="progress" element={<CandidateCheckIns />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="support" element={<SupportTickets />} />
           <Route path="profile" element={<Profile />} />
         </Route>
 

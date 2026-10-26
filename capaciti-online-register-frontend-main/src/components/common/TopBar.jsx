@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Clock, Bell, Menu, Shield, GraduationCap, Award, LogOut, ChevronDown, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, WfhStatus } from '../../api/types';
-import StatusBadge from './StatusBadge';
-import { demoOnly } from '../../mocks/demoOnly';
+import { useApp } from '../../context/AppContext';
+import { UserRole } from '../../api/types';
 
 const TopBar = ({ onOpenMenu, title, subtitle }) => {
   const { user, logout } = useAuth();
+  const { notifications } = useApp();
   const navigate = useNavigate();
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -117,18 +117,14 @@ const TopBar = ({ onOpenMenu, title, subtitle }) => {
 
         {/* Notifications (Candidate only) */}
         {user?.role === UserRole.CANDIDATE && (
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            title={demoOnly.notice}
-            className="relative rounded-xl border border-slate-200 p-2 text-slate-600 opacity-70"
-            aria-label="Notifications (demo only)"
+          <Link
+            to="/candidate/notifications"
+            className="relative rounded-xl border border-slate-200 p-2 text-slate-600 hover:border-[#6115D0] hover:text-[#6115D0]"
+            aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />
-            {/* MOCK-ONLY: not in backend */}
-            <span className="absolute -right-2 -top-2"><StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge></span>
-          </button>
+            {notifications.some((item) => !item.read) && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#F25251]" />}
+          </Link>
         )}
 
         {/* User Profile Dropdown */}

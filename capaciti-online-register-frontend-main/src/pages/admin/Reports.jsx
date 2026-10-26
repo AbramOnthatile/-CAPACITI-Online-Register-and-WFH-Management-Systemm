@@ -4,10 +4,10 @@ import { ArrivalStatus, UserRole, WfhStatus, WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
-import StatusBadge from '../../components/common/StatusBadge';
+import { downloadCsv } from '../../lib/downloadCsv';
 
 const AdminReports = () => {
-  const { attendance, attendanceLoading, attendanceError, wfh, wfhError, users, attendanceSummary, wfhSummary, reportsError } = useApp();
+  const { attendance, attendanceLoading, attendanceError, wfh, wfhError, users, reportsError } = useApp();
   const lateCount = attendance.filter((record) => record.arrivalStatus === ArrivalStatus.LATE_EXCUSED || record.arrivalStatus === ArrivalStatus.LATE_UNEXCUSED).length;
   const approvedWfh = wfh.filter((request) => request.status === WfhStatus.APPROVED).length;
   const candidates = users.filter((user) => user.role === UserRole.CANDIDATE).length;
@@ -28,8 +28,24 @@ const AdminReports = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="flex items-center gap-2"><span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#F25251]">Executive Compliance</span><span className="text-slate-300">·</span><span className="text-xs font-medium text-slate-500">Programme Operations</span></div><h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">Programme-Wide Reports</h2></div>
-        {/* MOCK-ONLY: not in backend */}
-        <button type="button" disabled aria-disabled="true" title="Demo only, not connected" className="flex items-center gap-2 self-start rounded-xl bg-[#1D2951] px-4 py-2.5 text-xs font-bold text-white opacity-60 sm:self-auto"><Download className="h-4 w-4" /><span>Export Executive Data</span><StatusBadge status={WorkMode.ON_SITE}>Demo</StatusBadge></button>
+        <button type="button" onClick={() => downloadCsv('programme-operations-report.csv', [
+          ...attendance.map((record) => ({
+            recordType: 'Attendance',
+            person: record.userName,
+            date: record.attendanceDate,
+            status: record.arrivalStatus,
+            workMode: record.workMode,
+            details: `Clock in ${record.clockInAt ?? '—'}; clock out ${record.clockOutAt ?? '—'}`,
+          })),
+          ...wfh.map((request) => ({
+            recordType: 'WFH request',
+            person: request.userName,
+            date: `${request.startDate} to ${request.endDate}`,
+            status: request.status,
+            workMode: WorkMode.WFH,
+            details: request.reason,
+          })),
+        ], ['recordType', 'person', 'date', 'status', 'workMode', 'details'])} className="flex items-center gap-2 self-start rounded-xl bg-[#1D2951] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0F172A] sm:self-auto"><Download className="h-4 w-4" /><span>Export Executive Data</span></button>
       </div>
 
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error.message}</p>}
@@ -44,7 +60,6 @@ const AdminReports = () => {
         {chartData.length ? <div className="h-80 w-full pt-4"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" fontSize={11} /><YAxis stroke="#94a3b8" fontSize={12} /><Tooltip contentStyle={{ backgroundColor: '#1D2951', borderRadius: '12px', color: '#ffffff', border: 'none', fontSize: '12px' }} /><Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} /><Bar name="On-site" dataKey="onSite" fill="#1D2951" radius={[6, 6, 0, 0]} /><Bar name="WFH" dataKey="wfh" fill="#6115D0" radius={[6, 6, 0, 0]} /><Bar name="Late arrivals" dataKey="late" fill="#F25251" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p className="py-10 text-center text-xs text-slate-500">{attendanceLoading ? 'Loading attendance records...' : 'No attendance summary is available.'}</p>}
       </Card>
 
-      {(attendanceSummary || wfhSummary) && <Card title="Backend Report Summaries" subtitle="Raw report responses; no fields are assumed"><pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-700">{JSON.stringify({ attendanceSummary, wfhSummary }, null, 2)}</pre></Card>}
     </div>
   );
 };

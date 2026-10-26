@@ -3,7 +3,7 @@ import { Download, Filter, Search, Clock, UserCheck, AlertCircle } from 'lucide-
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import { ArrivalStatus, DepartureStatus } from '../../api/types';
-import { demoOnly } from '../../mocks/demoOnly';
+import { downloadCsv } from '../../lib/downloadCsv';
 
 const AttendanceMonitor = () => {
   const { attendance, attendanceLoading, attendanceError } = useApp();
@@ -24,6 +24,10 @@ const AttendanceMonitor = () => {
   const formatTime = (value) => value
     ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
     : '—';
+  const breakTimes = (record, type) => (record.breaks ?? [])
+    .filter((item) => item.type === type)
+    .map((item) => `${formatTime(item.startedAt)}–${formatTime(item.endedAt)}`)
+    .join('; ') || '—';
 
   return (
     <div className="space-y-6">
@@ -38,11 +42,19 @@ const AttendanceMonitor = () => {
           </div>
           <h2 className="mt-1 text-2xl sm:text-3xl font-black text-[#1D2951]">Live Attendance Monitor</h2>
         </div>
-        {/* MOCK-ONLY: not in backend */}
-        <button type="button" disabled aria-disabled="true" title={demoOnly.notice}
-          className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-xs font-bold text-[#1D2951] opacity-60 self-start sm:self-auto">
+        <button type="button" onClick={() => downloadCsv('daily-attendance-register.csv', rows.map((record) => ({
+          candidate: record.userName,
+          date: record.attendanceDate,
+          workMode: record.workMode,
+          arrival: record.arrivalStatus,
+          clockIn: formatTime(record.clockInAt),
+          teaBreaks: breakTimes(record, 'TEA'),
+          lunchBreaks: breakTimes(record, 'LUNCH'),
+          clockOut: formatTime(record.clockOutAt),
+          departure: record.departureStatus ?? '',
+        })), ['candidate', 'date', 'workMode', 'arrival', 'clockIn', 'teaBreaks', 'lunchBreaks', 'clockOut', 'departure'])} className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-4 py-2 text-xs font-bold text-[#1D2951] hover:border-[#6115D0] hover:text-[#6115D0] self-start sm:self-auto">
           <Download className="h-4 w-4" />
-          <span>Export Daily Register</span><StatusBadge status={ArrivalStatus.ON_TIME}>Demo</StatusBadge>
+          <span>Export Daily Register</span>
         </button>
       </div>
 
@@ -115,10 +127,8 @@ const AttendanceMonitor = () => {
                       {record.departureStatus && <StatusBadge status={record.departureStatus} />}
                     </td>
                     <td className="px-4 py-3 font-mono text-slate-700 tabular-nums font-semibold">{formatTime(record.clockInAt)}</td>
-                    {/* MOCK-ONLY: not in backend */}
-                    <td className="px-4 py-3 text-slate-400">{demoOnly.manualBreakDisplay} <StatusBadge status={ArrivalStatus.ON_TIME}>Demo</StatusBadge></td>
-                    {/* MOCK-ONLY: not in backend */}
-                    <td className="px-4 py-3 text-slate-400">{demoOnly.manualBreakDisplay} <StatusBadge status={ArrivalStatus.ON_TIME}>Demo</StatusBadge></td>
+                    <td className="px-4 py-3 font-mono text-slate-600">{breakTimes(record, 'TEA')}</td>
+                    <td className="px-4 py-3 font-mono text-slate-600">{breakTimes(record, 'LUNCH')}</td>
                     <td className="px-4 py-3 font-mono text-slate-700 tabular-nums font-semibold">{formatTime(record.clockOutAt)}</td>
                   </tr>
                 );
