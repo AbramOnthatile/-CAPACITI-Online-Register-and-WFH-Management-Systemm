@@ -29,7 +29,18 @@ export async function apiRequest<T>(
   }
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+  const requestUrl = `${baseUrl}${path}`;
+  let response: Response;
+  try {
+    response = await fetch(requestUrl, { ...options, headers });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        `Could not reach the API at ${baseUrl}. Check that the backend is running, VITE_API_BASE_URL is correct, and the backend allows this frontend origin through CORS.`,
+      );
+    }
+    throw error;
+  }
   if (!response.ok) {
     const envelope = (await response.json()) as ApiErrorEnvelope;
     throw new ApiError(response.status, envelope);
