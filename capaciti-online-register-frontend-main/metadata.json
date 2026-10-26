@@ -1,0 +1,8 @@
+{
+  "name": "CAPACITI Online Register & WFH Management System",
+  "description": "Role-based workforce management system for candidate attendance, WFH requests, progress tracking, and administrative oversight.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
