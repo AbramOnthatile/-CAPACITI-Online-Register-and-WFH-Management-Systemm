@@ -5,7 +5,9 @@ import { WfhStatus } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/common/StatusBadge';
-import Card from '../../components/common/Card';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
+import EmptyState from '../../components/common/EmptyState';
 import { getStatusMetadata } from '../../lib/status';
 import { countWfhDaysForWeek, getCurrentWeekStart, weeklyWfhLimit } from '../../lib/wfhPolicy';
 
@@ -19,73 +21,74 @@ const WFHRequests = () => {
   const filtered = tab === 'ALL' ? mine : mine.filter((item) => item.status === tab);
   const reservedDaysThisWeek = countWfhDaysForWeek(mine, getCurrentWeekStart());
   const remainingDays = Math.max(0, weeklyWfhLimit - reservedDaysThisWeek);
+  const approved = mine.filter((item) => item.status === WfhStatus.APPROVED).length;
+  const pending = mine.filter((item) => item.status === WfhStatus.PENDING).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Remote Work Governance</span>
-            <span className="text-slate-300">·</span>
-            <span className="text-xs text-slate-500 font-medium">My requests</span>
+    <div className="page">
+      <PageHeader
+        eyebrow="Remote work"
+        title="My WFH requests"
+        actions={<Link to="/candidate/wfh/new" className="btn btn-primary"><Plus className="h-4 w-4" />Apply for WFH</Link>}
+      />
+
+      <div className="surface surface-pad">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="label-caps">Weekly allowance</p>
+            <p className="mt-1 font-mono text-2xl font-extrabold text-navy">{remainingDays} day{remainingDays === 1 ? '' : 's'} left</p>
           </div>
-          <h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">My WFH Requests</h2>
+          <p className="text-right text-xs text-slate-500">{reservedDaysThisWeek} of {weeklyWfhLimit} used</p>
         </div>
-        <Link to="/candidate/wfh/new" className="flex items-center gap-2 self-start rounded-xl bg-[#6115D0] px-4 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-[#4F11AA] sm:self-auto">
-          <Plus className="h-4 w-4" /><span>Apply for WFH</span>
-        </Link>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={weeklyWfhLimit} aria-valuenow={reservedDaysThisWeek} aria-label="WFH days used this week">
+          <div className="h-full rounded-full bg-primary-600 transition-all" style={{ width: `${Math.min(100, (reservedDaysThisWeek / weeklyWfhLimit) * 100)}%` }} />
+        </div>
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+          <div><dt className="label-caps">Approved</dt><dd className="mt-0.5 font-mono text-xl font-extrabold text-emerald-600">{approved}</dd></div>
+          <div><dt className="label-caps">Pending</dt><dd className="mt-0.5 font-mono text-xl font-extrabold text-salmon">{pending}</dd></div>
+        </dl>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Weekly Policy Allowance</p>
-          </div>
-          <p className="mt-1 font-mono text-2xl font-black text-[#1D2951]">{remainingDays} day{remainingDays === 1 ? '' : 's'} remaining</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">{reservedDaysThisWeek} of {weeklyWfhLimit} weekdays reserved this week</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Approved Requests</p>
-          <p className="mt-1 font-mono text-2xl font-black text-emerald-600">{mine.filter((item) => item.status === WfhStatus.APPROVED).length}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">From your request records</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Pending Decisions</p>
-          <p className="mt-1 font-mono text-2xl font-black text-[#F25251]">{mine.filter((item) => item.status === WfhStatus.PENDING).length}</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">Awaiting review</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm">
+      <div className="chip-row" role="group" aria-label="Filter requests by status">
         {filters.map((key) => (
-          <button key={key} type="button" onClick={() => setTab(key)} className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-bold transition-all ${tab === key ? 'bg-[#1D2951] text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-[#1D2951]'}`}>
+          <button key={key} type="button" aria-pressed={tab === key} onClick={() => setTab(key)} className="chip">
             {key === 'ALL' ? 'All' : getStatusMetadata(key).label}
           </button>
         ))}
       </div>
 
-      {wfhError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{wfhError.message}</p>}
-      {wfhLoading ? <p className="text-xs text-slate-500">Loading requests...</p> : (
-        <div className="space-y-3">
-          {filtered.length ? filtered.map((request) => (
-            <Link key={request.id} to={`/candidate/wfh/${request.id}`} className="group flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:border-[#6115D0]/40 hover:shadow-md sm:flex-row sm:items-center">
-              <div className="flex items-start gap-4">
-                <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><Home className="h-5 w-5" /></div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#1D2951] group-hover:text-[#6115D0]">{request.reason}</h3>
+      <Alert>{wfhError?.message}</Alert>
+      {wfhLoading ? <p className="meta">Loading requests...</p> : (
+        <ul className="list">
+          {filtered.map((request) => (
+            <li key={request.id}>
+              <Link to={`/candidate/wfh/${request.id}`} className="surface surface-interactive group flex items-center gap-3 p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600/10 text-primary-600"><Home className="h-5 w-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 text-sm font-bold text-navy group-hover:text-primary-600">{request.reason}</h3>
                     <StatusBadge status={request.status} />
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{request.startDate} – {request.endDate}</span>
-                    <span>Reviewed by: {request.reviewedByName || 'Not yet reviewed'}</span>
-                  </div>
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1 font-mono"><Calendar className="h-3.5 w-3.5" />{request.startDate} – {request.endDate}</span>
+                    <span>{request.reviewedByName ? `Reviewed by ${request.reviewedByName}` : 'Not yet reviewed'}</span>
+                  </p>
                 </div>
-              </div>
-              <span className="flex items-center gap-1 self-end text-xs font-bold text-[#6115D0] sm:self-center">View Details <ChevronRight className="h-4 w-4" /></span>
-            </Link>
-          )) : <Card title="No WFH requests"><p className="text-xs text-slate-500">Submit a request when you need to work remotely.</p></Card>}
-        </div>
+                <ChevronRight className="hidden h-5 w-5 shrink-0 text-slate-300 sm:block" />
+              </Link>
+            </li>
+          ))}
+          {!filtered.length && (
+            <li>
+              <EmptyState
+                icon={Home}
+                title="No WFH requests"
+                description="Submit a request when you need to work remotely."
+                action={<Link to="/candidate/wfh/new" className="btn btn-secondary btn-sm"><Plus className="h-3.5 w-3.5" />New request</Link>}
+              />
+            </li>
+          )}
+        </ul>
       )}
     </div>
   );

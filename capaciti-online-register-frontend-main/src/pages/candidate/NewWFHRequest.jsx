@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Send } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
-import { ArrowLeft, Calendar, Send } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
 
 const initialReadiness = {
   stableInternet: false,
   powerBackup: false,
   quietWorkspace: false,
   laptopReady: false,
+};
+const readinessLabels = {
+  stableInternet: 'Stable internet',
+  powerBackup: 'Power backup',
+  quietWorkspace: 'Quiet workspace',
+  laptopReady: 'Laptop ready',
 };
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
 
@@ -44,62 +52,52 @@ const NewWFHRequest = () => {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Link to="/candidate/wfh" className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h2 className="text-xl font-black text-[#1D2951] sm:text-2xl">New WFH Request</h2>
-          <p className="text-xs text-slate-500">Submit a remote work request for review</p>
-        </div>
-      </div>
+    <div className="page-narrow">
+      <PageHeader backTo="/candidate/wfh" backLabel="Back to WFH requests" eyebrow="Remote work" title="New WFH request" description="Submit a remote work request for review." />
 
-      <Card title="Remote Work Application" subtitle={`Requesting user: ${user?.fullName ?? ''}`}>
-        <form onSubmit={(event) => void onSubmit(event)} className="space-y-4" noValidate>
+      <Card title="Application details" subtitle={`Requesting as ${user?.fullName ?? ''}`}>
+        <form onSubmit={(event) => void onSubmit(event)} className="space-y-5" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Start date</span>
-              <input type="date" required min={today} className="input text-xs" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} />
+            <label className="field">
+              <span className="field-label">Start date</span>
+              <input type="date" required min={today} className="input" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} />
             </label>
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">End date</span>
-              <input type="date" required min={form.startDate || today} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className="input text-xs" />
+            <label className="field">
+              <span className="field-label">End date</span>
+              <input type="date" required min={form.startDate || today} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} className="input" />
             </label>
           </div>
 
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Reason</span>
-            <textarea rows="4" required className="input text-xs" value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="Explain the reason for your request." />
+          <label className="field">
+            <span className="field-label">Reason</span>
+            <textarea rows="4" required className="input" value={form.reason} onChange={(event) => setForm({ ...form, reason: event.target.value })} placeholder="Explain the reason for your request." />
           </label>
 
-          <fieldset className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <legend className="px-1 text-xs font-bold uppercase tracking-wider text-slate-700">WFH readiness</legend>
-            {Object.entries({
-              stableInternet: 'Stable internet',
-              powerBackup: 'Power backup',
-              quietWorkspace: 'Quiet workspace',
-              laptopReady: 'Laptop ready',
-            }).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-xs text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={form.readiness[key]}
-                  onChange={(event) => setForm({
-                    ...form,
-                    readiness: { ...form.readiness, [key]: event.target.checked },
-                  })}
-                />
-                {label}
-              </label>
-            ))}
+          <fieldset>
+            <legend className="field-label mb-2">WFH readiness</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {Object.entries(readinessLabels).map(([key, label]) => (
+                <label key={key} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 text-sm font-semibold transition-colors ${form.readiness[key] ? 'border-primary-600/40 bg-primary-50/70 text-navy' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                  <input
+                    type="checkbox"
+                    className="checkbox"
+                    checked={form.readiness[key]}
+                    onChange={(event) => setForm({
+                      ...form,
+                      readiness: { ...form.readiness, [key]: event.target.checked },
+                    })}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
           </fieldset>
 
-          {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}
-          <div className="flex gap-3 pt-2">
-            <button type="button" className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={() => navigate('/candidate/wfh')}>Cancel</button>
-            <button type="submit" disabled={submitting} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#6115D0] py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-[#4F11AA]">
-              <Calendar className="h-4 w-4" /><Send className="h-4 w-4" />{submitting ? 'Submitting...' : 'Submit Request'}
+          <Alert>{error}</Alert>
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/candidate/wfh')}>Cancel</button>
+            <button type="submit" disabled={submitting} className="btn btn-primary">
+              <Send className="h-4 w-4" />{submitting ? 'Submitting...' : 'Submit request'}
             </button>
           </div>
         </form>

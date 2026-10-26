@@ -5,7 +5,7 @@ const BrandLogo = ({ compact = false, className = '', to = '/' }) => {
     <div className={`flex items-center gap-3 ${className}`}>
       {compact ? (
         <img
-          src="/images/capaciti-icon.png"
+          src="/images/capaciti-icon.svg"
           alt="CAPACITI icon"
           className="h-9 w-9 object-contain drop-shadow-sm"
           onError={(e) => {
@@ -15,7 +15,7 @@ const BrandLogo = ({ compact = false, className = '', to = '/' }) => {
       ) : (
         <div className="flex items-center gap-3">
           <img
-            src="/images/capaciti-icon.png"
+            src="/images/capaciti-icon.svg"
             alt="CAPACITI icon"
             className="h-9 w-9 object-contain drop-shadow-sm"
             onError={(e) => {

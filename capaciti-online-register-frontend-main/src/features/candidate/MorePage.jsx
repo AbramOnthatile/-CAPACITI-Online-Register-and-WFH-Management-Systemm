@@ -1,27 +1,75 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight, Award } from 'lucide-react';
-import Card from '../../components/common/Card';
+import { Link, useNavigate } from 'react-router-dom';
+import { Award, Bell, ChevronRight, History, LifeBuoy, LogOut, User } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useApp } from '../../context/AppContext';
+import Avatar from '../../components/common/Avatar';
 
-const MorePage = () => (
-  <div className="mx-auto w-full max-w-3xl space-y-5">
-    <header>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#6115D0]">Candidate Workspace</p>
-      <h2 className="mt-1 text-2xl font-black text-[#1D2951]">More</h2>
-      <p className="mt-1 text-xs text-slate-500">Learning resources and account tools.</p>
-    </header>
-    <Card title="Learning & feedback" subtitle="Review your progress and mentor feedback.">
-      <Link to="/candidate/scorecards" className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 transition-colors hover:border-[#6115D0]/40 hover:bg-slate-50">
-        <span className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#6115D0]/10 text-[#6115D0]"><Award className="h-5 w-5" /></span>
-          <span>
-            <span className="block text-sm font-bold text-[#1D2951]">Scorecards</span>
-            <span className="mt-0.5 block text-[11px] text-slate-500">View your scores, feedback, and progress.</span>
-          </span>
+const groups = [
+  {
+    title: 'Learning & progress',
+    items: [
+      { label: 'Scorecards', description: 'Scores, feedback and progress', to: '/candidate/scorecards', icon: Award },
+      { label: 'Attendance history', description: 'Past records and timesheet export', to: '/candidate/attendance/history', icon: History },
+    ],
+  },
+  {
+    title: 'Help & updates',
+    items: [
+      { label: 'Notifications', description: 'Announcements and request updates', to: '/candidate/notifications', icon: Bell, unreadBadge: true },
+      { label: 'Support', description: 'Report a blocker or IT issue', to: '/candidate/support', icon: LifeBuoy },
+    ],
+  },
+];
+
+const MorePage = () => {
+  const { user, logout } = useAuth();
+  const { notifications } = useApp();
+  const navigate = useNavigate();
+  const unread = notifications.filter((item) => !item.read).length;
+
+  const handleSignOut = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className="page-narrow">
+      <Link to="/candidate/profile" className="surface surface-interactive flex items-center gap-4 p-4">
+        <Avatar name={user?.fullName} size="lg" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-extrabold text-navy">{user?.fullName}</span>
+          <span className="block truncate text-sm text-slate-500">{user?.email}</span>
+          <span className="mt-0.5 flex items-center gap-1 text-xs font-bold text-primary-600"><User className="h-3.5 w-3.5" />View profile</span>
         </span>
-        <ArrowRight className="h-4 w-4 shrink-0 text-[#6115D0]" />
+        <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
       </Link>
-    </Card>
-  </div>
-);
+
+      {groups.map((group) => (
+        <section key={group.title} aria-labelledby={`more-${group.title}`}>
+          <h2 id={`more-${group.title}`} className="label-caps mb-2 px-1">{group.title}</h2>
+          <ul className="surface divide-y divide-slate-100 overflow-hidden">
+            {group.items.map(({ label, description, to, icon: Icon, unreadBadge }) => (
+              <li key={to}>
+                <Link to={to} className="flex items-center gap-3 p-4 transition-colors hover:bg-slate-50">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-600/10 text-primary-600"><Icon className="h-5 w-5" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold text-navy">{label}</span>
+                    <span className="block truncate text-xs text-slate-500">{description}</span>
+                  </span>
+                  {unreadBadge && unread > 0 && <span className="pill border-transparent bg-salmon text-white">{unread}</span>}
+                  <ChevronRight className="h-5 w-5 shrink-0 text-slate-300" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      <button type="button" onClick={handleSignOut} className="btn btn-danger btn-block">
+        <LogOut className="h-4 w-4" />Sign out
+      </button>
+    </div>
+  );
+};
 
 export default MorePage;

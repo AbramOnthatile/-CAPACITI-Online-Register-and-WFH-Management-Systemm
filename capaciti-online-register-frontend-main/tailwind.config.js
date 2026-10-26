@@ -17,6 +17,7 @@ export default {
           900: '#2B095E',
         },
         navy: '#1D2951',
+        canvas: '#F6F7FB',
         salmon: '#F25251',
         pink: '#F1D1D1',
         success: '#16a34a',
@@ -28,9 +29,7 @@ export default {
       },
       boxShadow: {
         soft: '0 10px 30px rgba(15, 23, 42, 0.08)',
-      },
-      borderRadius: {
-        xl: '1rem',
+        surface: '0 1px 2px rgba(29, 41, 81, 0.04), 0 4px 16px -8px rgba(29, 41, 81, 0.08)',
       },
     },
   },

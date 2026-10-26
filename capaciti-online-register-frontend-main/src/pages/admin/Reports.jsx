@@ -4,6 +4,8 @@ import { ArrivalStatus, UserRole, WfhStatus, WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 import Card from '../../components/common/Card';
 import StatCard from '../../components/common/StatCard';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
 import { downloadCsv } from '../../lib/downloadCsv';
 
 const AdminReports = () => {
@@ -24,42 +26,60 @@ const AdminReports = () => {
   const chartData = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
   const error = attendanceError || wfhError || reportsError;
 
+  const exportCsv = () => downloadCsv('programme-operations-report.csv', [
+    ...attendance.map((record) => ({
+      recordType: 'Attendance',
+      person: record.userName,
+      date: record.attendanceDate,
+      status: record.arrivalStatus,
+      workMode: record.workMode,
+      details: `Clock in ${record.clockInAt ?? '—'}; clock out ${record.clockOutAt ?? '—'}`,
+    })),
+    ...wfh.map((request) => ({
+      recordType: 'WFH request',
+      person: request.userName,
+      date: `${request.startDate} to ${request.endDate}`,
+      status: request.status,
+      workMode: WorkMode.WFH,
+      details: request.reason,
+    })),
+  ], ['recordType', 'person', 'date', 'status', 'workMode', 'details']);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div><div className="flex items-center gap-2"><span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#F25251]">Executive Compliance</span><span className="text-slate-300">·</span><span className="text-xs font-medium text-slate-500">Programme Operations</span></div><h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">Programme-Wide Reports</h2></div>
-        <button type="button" onClick={() => downloadCsv('programme-operations-report.csv', [
-          ...attendance.map((record) => ({
-            recordType: 'Attendance',
-            person: record.userName,
-            date: record.attendanceDate,
-            status: record.arrivalStatus,
-            workMode: record.workMode,
-            details: `Clock in ${record.clockInAt ?? '—'}; clock out ${record.clockOutAt ?? '—'}`,
-          })),
-          ...wfh.map((request) => ({
-            recordType: 'WFH request',
-            person: request.userName,
-            date: `${request.startDate} to ${request.endDate}`,
-            status: request.status,
-            workMode: WorkMode.WFH,
-            details: request.reason,
-          })),
-        ], ['recordType', 'person', 'date', 'status', 'workMode', 'details'])} className="flex items-center gap-2 self-start rounded-xl bg-[#1D2951] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#0F172A] sm:self-auto"><Download className="h-4 w-4" /><span>Export Executive Data</span></button>
-      </div>
+    <div className="page">
+      <PageHeader
+        eyebrow="Executive compliance"
+        eyebrowClassName="text-salmon"
+        title="Programme-wide reports"
+        actions={<button type="button" onClick={exportCsv} className="btn btn-dark"><Download className="h-4 w-4" />Export data</button>}
+      />
 
-      {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error.message}</p>}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Attendance Records" value={attendance.length} detail={attendanceLoading ? 'Loading records' : 'From attendance data'} tone="success" />
-        <StatCard title="Approved WFH Requests" value={approvedWfh} detail="From WFH request data" tone="primary" />
+      <Alert>{error?.message}</Alert>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard title="Attendance records" value={attendance.length} detail={attendanceLoading ? 'Loading records' : 'From attendance data'} tone="success" />
+        <StatCard title="Approved WFH" value={approvedWfh} detail="From WFH requests" tone="primary" />
         <StatCard title="Punctuality" value={`${punctuality}%`} detail={`${lateCount} late arrivals`} tone="slate" />
-        <StatCard title="Registered Candidates" value={candidates} detail="Active user records" tone="warning" />
+        <StatCard title="Candidates" value={candidates} detail="Registered users" tone="warning" />
       </div>
 
-      <Card title="Attendance & Work Mode Summary" subtitle="Daily records grouped by on-site and WFH work mode">
-        {chartData.length ? <div className="h-80 w-full pt-4"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="date" stroke="#94a3b8" fontSize={11} /><YAxis stroke="#94a3b8" fontSize={12} /><Tooltip contentStyle={{ backgroundColor: '#1D2951', borderRadius: '12px', color: '#ffffff', border: 'none', fontSize: '12px' }} /><Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} /><Bar name="On-site" dataKey="onSite" fill="#1D2951" radius={[6, 6, 0, 0]} /><Bar name="WFH" dataKey="wfh" fill="#6115D0" radius={[6, 6, 0, 0]} /><Bar name="Late arrivals" dataKey="late" fill="#F25251" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p className="py-10 text-center text-xs text-slate-500">{attendanceLoading ? 'Loading attendance records...' : 'No attendance summary is available.'}</p>}
+      <Card title="Attendance & work mode summary" subtitle="Daily records grouped by on-site and WFH work mode">
+        {chartData.length ? (
+          <div className="h-72 w-full sm:h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={12} allowDecimals={false} />
+                <Tooltip contentStyle={{ backgroundColor: '#1D2951', borderRadius: '12px', color: '#ffffff', border: 'none', fontSize: '12px' }} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar name="On-site" dataKey="onSite" fill="#1D2951" radius={[6, 6, 0, 0]} />
+                <Bar name="WFH" dataKey="wfh" fill="#6115D0" radius={[6, 6, 0, 0]} />
+                <Bar name="Late arrivals" dataKey="late" fill="#F25251" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : <p className="py-10 text-center text-sm text-slate-500">{attendanceLoading ? 'Loading attendance records...' : 'No attendance summary is available.'}</p>}
       </Card>
-
     </div>
   );
 };

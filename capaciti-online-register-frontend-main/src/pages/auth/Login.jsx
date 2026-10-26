@@ -94,7 +94,7 @@ const Login = () => {
           <div className="relative z-10">
             <div className="flex items-center gap-3">
               <img
-                src="/images/capaciti-icon.png"
+                src="/images/capaciti-icon.svg"
                 alt="CAPACITI"
                 className="h-10 w-10 object-contain drop-shadow"
                 onError={(e) => {

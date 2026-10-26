@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { getStatusMetadata } from '../../lib/status';
+import { MessageSquare, Send } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
+import Avatar from '../../components/common/Avatar';
+import EmptyState from '../../components/common/EmptyState';
 
 const ChampionCheckIns = () => {
   const { checkinReviews, saveCheckinFeedback } = useApp();
@@ -26,38 +29,40 @@ const ChampionCheckIns = () => {
   };
 
   return (
-  <div className="space-y-6">
-    <div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Candidate Check-ins</span>
-        <span className="text-slate-300">·</span>
-        <span className="text-xs text-slate-500 font-medium">Candidate submissions</span>
-      </div>
-      <h2 className="mt-1 text-2xl sm:text-3xl font-black text-[#1D2951]">Check-ins</h2>
-    </div>
+    <div className="page-narrow">
+      <PageHeader eyebrow="Candidate submissions" title="Check-in reviews" description="Candidate responses and coach feedback." />
 
-    <Card title="Check-in Reviews" subtitle="Candidate responses and coach feedback">
-      <div className="space-y-4">
-        {checkinReviews.map((entry) => (
-          <article key={entry.id} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-[#1D2951]">{entry.userName}</h3>
-                <p className="font-mono text-[11px] text-slate-400">{entry.promptDate}</p>
+      {checkinReviews.length ? (
+        <ul className="list">
+          {checkinReviews.map((entry) => (
+            <li key={entry.id} className="surface">
+              <div className="card-header">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar name={entry.userName} size="sm" />
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-bold text-navy">{entry.userName}</h3>
+                    <p className="font-mono text-xs text-slate-400">{entry.promptDate}</p>
+                  </div>
+                </div>
+                <StatusBadge status={entry.stage} />
               </div>
-              <StatusBadge status={entry.stage} />
-            </div>
-            <p className="text-xs text-slate-700">{entry.response}</p>
-            <label className="block text-xs font-bold text-slate-600">Coach feedback<textarea rows="2" className="input mt-1.5 text-xs" value={drafts[entry.id] ?? entry.feedbackComment} onChange={(event) => setDrafts((current) => ({ ...current, [entry.id]: event.target.value }))} /></label>
-            {errors[entry.id] && <p role="alert" className="text-xs text-rose-600">{errors[entry.id]}</p>}
-            {savedId === entry.id && <p role="status" className="text-xs font-semibold text-emerald-700">Feedback saved.</p>}
-            <button type="button" onClick={() => submitFeedback(entry)} className="rounded-xl bg-[#6115D0] px-4 py-2 text-xs font-bold text-white hover:bg-[#4F11AA]">Send Feedback</button>
-          </article>
-        ))}
-        {!checkinReviews.length && <p className="py-8 text-center text-xs text-slate-500">No candidate check-ins have been submitted yet.</p>}
-      </div>
-    </Card>
-  </div>
+              <div className="card-body space-y-4">
+                <p className="text-sm leading-relaxed text-slate-700">{entry.response}</p>
+                <label className="field">
+                  <span className="field-label">Coach feedback</span>
+                  <textarea rows="2" className="input" value={drafts[entry.id] ?? entry.feedbackComment} onChange={(event) => setDrafts((current) => ({ ...current, [entry.id]: event.target.value }))} />
+                </label>
+                <Alert>{errors[entry.id]}</Alert>
+                {savedId === entry.id && <Alert tone="success">Feedback saved.</Alert>}
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => submitFeedback(entry)} className="btn btn-primary w-full sm:w-auto"><Send className="h-4 w-4" />Send feedback</button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : <EmptyState icon={MessageSquare} title="No check-ins yet" description="No candidate check-ins have been submitted yet." className="bg-white" />}
+    </div>
   );
 };
 
