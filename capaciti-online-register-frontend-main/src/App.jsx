@@ -10,6 +10,9 @@ import CandidateCheckIns from './pages/candidate/CheckIns';
 import Notifications from './pages/candidate/Notifications';
 import SupportTickets from './pages/candidate/SupportTickets';
 import Profile from './pages/candidate/Profile';
+import MorePage from './features/candidate/MorePage';
+import MyScorecardsPage from './features/candidate/scorecards/MyScorecardsPage';
+import ScorecardDetailPage from './features/candidate/scorecards/ScorecardDetailPage';
 import ChampionDashboard from './pages/champion/ChampionDashboard';
 import Candidates from './pages/champion/Candidates';
 import CandidateDetails from './pages/champion/CandidateDetails';
@@ -18,6 +21,9 @@ import ChampionWFHRequests from './pages/champion/WFHRequests';
 import WFHReview from './pages/champion/WFHReview';
 import ChampionCheckIns from './pages/champion/CheckIns';
 import ChampionReports from './pages/champion/Reports';
+import ChampionAnnouncements from './pages/champion/Announcements';
+import ScorecardsListPage from './features/mentor/scorecards/ScorecardsListPage';
+import ScoringPage from './features/mentor/scorecards/ScoringPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import BlockersTickets from './pages/admin/BlockersTickets';
@@ -66,6 +72,9 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="support" element={<SupportTickets />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="more" element={<MorePage />} />
+          <Route path="scorecards" element={<MyScorecardsPage />} />
+          <Route path="scorecards/:assessmentId" element={<ScorecardDetailPage />} />
         </Route>
 
         {/* Tech Champion Command */}
@@ -85,6 +94,9 @@ function App() {
           <Route path="wfh/:id" element={<WFHReview />} />
           <Route path="progress" element={<ChampionCheckIns />} />
           <Route path="reports" element={<ChampionReports />} />
+          <Route path="announcements" element={<ChampionAnnouncements />} />
+          <Route path="scorecards" element={<ScorecardsListPage />} />
+          <Route path="scorecards/:id" element={<ScoringPage />} />
         </Route>
 
         {/* Executive Administration */}

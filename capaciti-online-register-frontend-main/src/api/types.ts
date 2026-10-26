@@ -208,6 +208,20 @@ export interface TicketResolution {
   resolutionNote: string;
 }
 
+export interface Notification {
+  id: string;
+  recipientId?: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  type: string;
+  read: boolean;
+}
+
+export interface AnnouncementResponse {
+  recipientCount: number;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

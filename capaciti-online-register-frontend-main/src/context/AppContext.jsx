@@ -15,6 +15,7 @@ import { mockCheckinReviews, mockNotifications } from '../mocks/entities';
 import { readMockCollection, writeMockValue } from '../mocks/storage';
 import { useMocks } from '../api/mockMode';
 import { useAuth } from './AuthContext';
+import { apiClient } from '../api/client';
 
 const AppContext = createContext(null);
 
@@ -32,23 +33,92 @@ export const AppProvider = ({ children }) => {
   const campusesApi = useCampusesApi();
   const dashboardApi = useDashboardApi(isCandidate ? UserRole.CANDIDATE : UserRole.TECH_CHAMP, isCandidate || isChampion);
   const reportsApi = useReportsApi(isAdmin || isChampion);
-  const [notifications, setNotifications] = useState(() => readMockCollection('notifications', mockNotifications));
+  const [notificationRecords, setNotificationRecords] = useState(() => useMocks
+    ? readMockCollection('notifications', mockNotifications)
+    : []);
+  const [notificationsLoading, setNotificationsLoading] = useState(isCandidate && !useMocks);
+  const [notificationsError, setNotificationsError] = useState(null);
   const [checkinReviews, setCheckinReviews] = useState(() => readMockCollection('checkin-reviews', mockCheckinReviews));
+  const notifications = isCandidate
+    ? notificationRecords.filter((item) => !item.recipientId || item.recipientId === user.id)
+    : [];
 
   useEffect(() => {
+    if (!isCandidate || useMocks) {
+      setNotificationsLoading(false);
+      setNotificationsError(null);
+      return undefined;
+    }
+    let active = true;
+    setNotificationsLoading(true);
+    apiClient.get('/notifications/me')
+      .then((records) => {
+        if (active) {
+          setNotificationRecords(records);
+          setNotificationsError(null);
+        }
+      })
+      .catch((error) => {
+        if (active) setNotificationsError(error instanceof Error ? error : new Error('Notifications could not be loaded.'));
+      })
+      .finally(() => {
+        if (active) setNotificationsLoading(false);
+      });
+    return () => { active = false; };
+  }, [isCandidate, user?.id]);
+
+  useEffect(() => {
+    if (!useMocks) return undefined;
     const syncMockData = (event) => {
-      if (event.detail === 'notifications') setNotifications(readMockCollection('notifications', mockNotifications));
+      if (event.detail === 'notifications') setNotificationRecords(readMockCollection('notifications', mockNotifications));
       if (event.detail === 'checkin-reviews') setCheckinReviews(readMockCollection('checkin-reviews', mockCheckinReviews));
     };
     window.addEventListener('capaciti-demo:update', syncMockData);
     return () => window.removeEventListener('capaciti-demo:update', syncMockData);
   }, []);
 
-  const markNotificationRead = useCallback((id) => {
-    const updated = notifications.map((item) => item.id === id ? { ...item, read: true } : item);
+  const markNotificationRead = useCallback(async (id) => {
+    if (!isCandidate) throw new Error('Only candidates can update their notification status.');
+    if (!useMocks) {
+      const updatedNotification = await apiClient.patch(`/notifications/${id}/read`);
+      setNotificationRecords((current) => current.map((item) => item.id === id ? updatedNotification : item));
+      return;
+    }
+    const current = readMockCollection('notifications', mockNotifications);
+    const notification = current.find((item) => item.id === id);
+    if (!notification || (notification.recipientId && notification.recipientId !== user.id)) {
+      throw new Error('The notification could not be found.');
+    }
+    const updated = current.map((item) => item.id === id ? { ...item, read: true } : item);
     writeMockValue('notifications', updated);
-    setNotifications(updated);
-  }, [notifications]);
+    setNotificationRecords(updated);
+  }, [isCandidate, user?.id]);
+
+  const createAnnouncement = useCallback(async ({ title, message }) => {
+    if (!isChampion) throw new Error('Only Tech Champions can publish announcements.');
+    if (!useMocks) {
+      const response = await apiClient.post('/announcements', { title, message });
+      return response.recipientCount;
+    }
+    const candidates = usersApi.data.filter((candidate) => candidate.role === UserRole.CANDIDATE && candidate.active);
+    if (candidates.length === 0) throw new Error('There are no active candidates to receive this announcement.');
+
+    const timestamp = new Date().toISOString();
+    const current = readMockCollection('notifications', mockNotifications);
+    const announcementNotifications = candidates.map((candidate, index) => ({
+      id: `announcement-${Date.now()}-${index}`,
+      recipientId: candidate.id,
+      title,
+      message,
+      timestamp,
+      type: 'Announcement',
+      read: false,
+    }));
+    const updated = [...current, ...announcementNotifications];
+    writeMockValue('notifications', updated);
+    setNotificationRecords(updated);
+    return candidates.length;
+  }, [isChampion, usersApi.data]);
 
   const saveCheckinFeedback = useCallback((id, feedbackComment) => {
     const updated = checkinReviews.map((item) => item.id === id ? { ...item, feedbackComment } : item);
@@ -101,11 +171,14 @@ export const AppProvider = ({ children }) => {
     wfhSummary: reportsApi.wfhSummary.data,
     reportsError: reportsApi.overview.error || reportsApi.attendanceSummary.error || reportsApi.wfhSummary.error,
     notifications,
+    notificationsLoading,
+    notificationsError,
     markNotificationRead,
+    createAnnouncement,
     checkinReviews,
     saveCheckinFeedback,
     isDemoMode: useMocks,
-  }), [usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi, notifications, checkinReviews, markNotificationRead, saveCheckinFeedback]);
+  }), [usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi, notifications, notificationsLoading, notificationsError, checkinReviews, markNotificationRead, createAnnouncement, saveCheckinFeedback]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

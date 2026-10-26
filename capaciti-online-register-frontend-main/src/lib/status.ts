@@ -25,8 +25,10 @@ import {
   WfhStatus,
   WorkMode,
 } from '../api/types';
+import type { AssessmentStatus } from '../api/scorecardTypes';
 
 export type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'primary';
+type AppStatus = UserRole | WorkMode | ArrivalStatus | DepartureStatus | WfhStatus | PromptStage | PromptStatus | TicketType | TicketStatus | AssessmentStatus;
 
 export interface StatusMetadata {
   label: string;
@@ -35,9 +37,10 @@ export interface StatusMetadata {
 }
 
 export const statusMetadata: Record<
-  UserRole | WorkMode | ArrivalStatus | DepartureStatus | WfhStatus | PromptStage | PromptStatus | TicketType | TicketStatus,
+  AppStatus,
   StatusMetadata
 > = {
+  DRAFT: { label: 'Draft', tone: 'warning', icon: Clock3 },
   [UserRole.CANDIDATE]: { label: 'Candidate', tone: 'primary', icon: UserRound },
   [UserRole.TECH_CHAMP]: { label: 'Tech Champion', tone: 'info', icon: ShieldCheck },
   [UserRole.ADMIN]: { label: 'Admin', tone: 'danger', icon: ShieldCheck },

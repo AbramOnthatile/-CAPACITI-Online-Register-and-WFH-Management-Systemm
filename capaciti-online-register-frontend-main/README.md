@@ -20,7 +20,7 @@ VITE_API_BASE_URL=http://localhost:8080/api/v1
 VITE_USE_MOCKS=true
 ```
 
-The frontend defaults to demo mode and uses typed sample entities from `src/mocks/entities.ts`. Demo sign-in is available from the account buttons; the demo password is `Password123!`. Demo changes (attendance, breaks, WFH requests and decisions, check-ins, users, support tickets, profile details, notifications, and coach feedback) are saved in browser storage so they remain available after refresh. To connect to the backend, set `VITE_USE_MOCKS=false` and configure the reachable API URL. In API mode, successful authentication stores the JWT and sends it as a bearer token.
+The frontend defaults to demo mode and uses typed sample entities from `src/mocks/entities.ts`. Demo sign-in is available from the account buttons; the demo password is `Password123!`. Demo changes (attendance, breaks, WFH requests and decisions, check-ins, users, support tickets, profile details, notifications, announcements, and coach feedback) are saved in browser storage so they remain available after refresh. Tech Champions can publish announcements to all active candidates; announcements appear only in each candidate's notifications in both demo and API modes. To connect to the backend, set `VITE_USE_MOCKS=false` and configure the reachable API URL. In API mode, successful authentication stores the JWT and sends it as a bearer token.
 
 Restart the Vite dev server after changing `.env.local`.
 

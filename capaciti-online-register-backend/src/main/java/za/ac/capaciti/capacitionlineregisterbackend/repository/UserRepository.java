@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByEmailIgnoreCase(String email);
 
+    List<User> findByRoleAndActive(String role, boolean active);
+
         List<User> findByRole(Enum<?> role);
 
     @Query("""

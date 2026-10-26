@@ -59,7 +59,7 @@ const SupportTickets = () => {
     <div className="max-w-4xl space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Candidate Support</span>
+          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Admin Support</span>
           <span className="text-slate-300">·</span>
           <span className="text-xs font-medium text-slate-500">Blockers &amp; IT assistance</span>
         </div>
@@ -70,7 +70,7 @@ const SupportTickets = () => {
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}
       {saved && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{saved}</p>}
 
-      <Card title="Create a support ticket" subtitle="Tell the support team what is blocking your work.">
+      <Card title="Create a support ticket" subtitle="Describe what is blocking your work. The admin team will review and resolve your ticket.">
         <form onSubmit={(event) => void submitTicket(event)} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-bold text-slate-700">
