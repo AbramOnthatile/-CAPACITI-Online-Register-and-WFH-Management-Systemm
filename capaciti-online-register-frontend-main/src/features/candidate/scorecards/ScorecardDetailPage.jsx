@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Award } from 'lucide-react';
 import Card from '../../../components/common/Card';
 import { percentTone, scoreCriteria, scoreTone } from '../../../lib/scoring';
@@ -14,13 +15,30 @@ const toneClasses = {
 
 const ScorecardDetailPage = () => {
   const { assessmentId } = useParams();
-  const scorecard = useMyScorecards().find((item) => item.assessmentId === assessmentId);
+  const { getScorecard } = useMyScorecards();
+  const [scorecard, setScorecard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(null);
+    getScorecard(assessmentId)
+      .then((result) => { if (active) setScorecard(result); })
+      .catch((caught) => { if (active) setError(caught instanceof Error ? caught : new Error('This scorecard could not be loaded.')); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [assessmentId, getScorecard]);
+
+  if (loading) {
+    return <p role="status" className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-500">Loading scorecard...</p>;
+  }
   if (!scorecard) {
     return (
       <div className="mx-auto max-w-xl space-y-4 text-center">
-        <Card title="Scorecard unavailable">
-          <p className="text-xs leading-relaxed text-slate-600">This scorecard is not available in your account.</p>
+        <Card title={error ? 'Scorecard could not be loaded' : 'Scorecard unavailable'}>
+          <p role={error ? 'alert' : undefined} className="text-xs leading-relaxed text-slate-600">{error?.message || 'This scorecard is not available in your account.'}</p>
           <Link to="/candidate/scorecards" className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#6115D0]"><ArrowLeft className="h-4 w-4" />Back to my scorecards</Link>
         </Card>
       </div>

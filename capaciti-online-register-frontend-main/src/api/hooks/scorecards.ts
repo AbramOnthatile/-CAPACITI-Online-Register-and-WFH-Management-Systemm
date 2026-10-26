@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiClient } from '../client';
-import { useMocks } from '../mockMode';
 import type {
   AssessmentDetailDto,
   AssessmentSummaryDto,
   AssessmentType,
+  MyScorecardDto,
   SaveEntriesRequest,
 } from '../scorecardTypes';
 import { mockAssessmentDetails } from '../../mocks/scorecards';
+import { getMockMyScorecards } from '../../mocks/candidateScorecards';
 import { readMockCollection, writeMockValue } from '../../mocks/storage';
 import { overallPercent } from '../../lib/scoring';
 
@@ -40,10 +40,7 @@ export function useScorecards() {
     setLoading(true);
     setError(null);
     try {
-      const assessments: AssessmentSummaryDto[] = useMocks
-        ? loadMockAssessments()
-        : await apiClient.get<AssessmentSummaryDto[]>('/assessments');
-      setData(assessments);
+      setData(loadMockAssessments());
     } catch (caught) {
       setError(caught instanceof Error ? caught : new Error('Scorecards could not be loaded.'));
     } finally {
@@ -53,7 +50,6 @@ export function useScorecards() {
 
   useEffect(() => {
     void refresh();
-    if (!useMocks) return undefined;
     const sync = (event: CustomEvent<string>) => {
       if (event.detail === storageKey) void refresh();
     };
@@ -62,7 +58,6 @@ export function useScorecards() {
   }, [refresh]);
 
   const getAssessment = useCallback(async (id: string) => {
-    if (!useMocks) return apiClient.get<AssessmentDetailDto>(`/assessments/${encodeURIComponent(id)}`);
     const assessment = loadMockAssessments().find((item) => item.id === id);
     if (!assessment) throw new Error('Scorecard not found.');
     return assessment;
@@ -75,11 +70,6 @@ export function useScorecards() {
     periodStart: string;
     periodEnd: string;
   }) => {
-    if (!useMocks) {
-      const created = await apiClient.post<AssessmentDetailDto>('/assessments', input);
-      await refresh();
-      return created;
-    }
     const template = loadMockAssessments()[0];
     const created: AssessmentDetailDto = {
       id: `assessment-${Date.now()}`,
@@ -113,11 +103,6 @@ export function useScorecards() {
   }, [refresh]);
 
   const saveAssessment = useCallback(async (id: string, request: SaveEntriesRequest) => {
-    if (!useMocks) {
-      const saved = await apiClient.put<AssessmentDetailDto>(`/assessments/${encodeURIComponent(id)}/entries`, request);
-      await refresh();
-      return saved;
-    }
     const current = loadMockAssessments();
     const index = current.findIndex((item) => item.id === id);
     if (index === -1) throw new Error('Scorecard not found.');
@@ -129,11 +114,6 @@ export function useScorecards() {
   }, [refresh]);
 
   const setAssessmentStatus = useCallback(async (id: string, action: 'submit' | 'reopen') => {
-    if (!useMocks) {
-      const result = await apiClient.post<AssessmentDetailDto>(`/assessments/${encodeURIComponent(id)}/${action}`);
-      await refresh();
-      return result;
-    }
     const current = loadMockAssessments();
     const index = current.findIndex((item) => item.id === id);
     if (index === -1) throw new Error('Scorecard not found.');
@@ -147,11 +127,6 @@ export function useScorecards() {
   }, [refresh]);
 
   const deleteAssessment = useCallback(async (id: string) => {
-    if (!useMocks) {
-      await apiClient.delete<void>(`/assessments/${encodeURIComponent(id)}`);
-      await refresh();
-      return;
-    }
     const current = loadMockAssessments();
     const assessment = current.find((item) => item.id === id);
     if (!assessment) throw new Error('Scorecard not found.');
@@ -162,4 +137,17 @@ export function useScorecards() {
   }, [refresh]);
 
   return { assessments: data, loading, error, refresh, getAssessment, createAssessment, saveAssessment, setAssessmentStatus, deleteAssessment };
+}
+
+export async function getMyScorecards(candidateId: string | undefined): Promise<MyScorecardDto[]> {
+  return getMockMyScorecards(candidateId);
+}
+
+export async function getMyScorecard(
+  candidateId: string | undefined,
+  assessmentId: string,
+): Promise<MyScorecardDto> {
+  const scorecard = getMockMyScorecards(candidateId).find((item) => item.assessmentId === assessmentId);
+  if (!scorecard) throw new Error('Scorecard not found.');
+  return scorecard;
 }
