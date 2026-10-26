@@ -1,6 +1,7 @@
 package za.ac.capaciti.capacitionlineregisterbackend.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +9,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,6 +23,10 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     Optional<AttendanceRecord> findByUserAndAttendanceDate(User user, LocalDate date);
 
     List<AttendanceRecord> findByAttendanceDate(LocalDate date);
+
+    @EntityGraph(attributePaths = "user")
+    List<AttendanceRecord> findByUser_IdInAndAttendanceDateBetween(
+            Collection<UUID> userIds, LocalDate fromDate, LocalDate toDate);
 
     Page<AttendanceRecord> findByUserOrderByAttendanceDateDesc(User user, Pageable pageable);
 

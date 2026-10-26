@@ -2,6 +2,9 @@ package za.ac.capaciti.capacitionlineregisterbackend.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,6 +29,10 @@ public class User extends BaseEntity {
 
     @Column(name = "role", nullable = false)
     private String role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "champion_id")
+    private User champion;
 
     @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
     private boolean active = true;

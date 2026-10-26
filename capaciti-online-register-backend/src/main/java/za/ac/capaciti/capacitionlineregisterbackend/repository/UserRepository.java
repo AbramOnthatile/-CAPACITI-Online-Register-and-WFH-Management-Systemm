@@ -20,6 +20,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findByRoleAndActive(String role, boolean active);
 
+    List<User> findByChampionAndRoleAndActive(User champion, String role, boolean active);
+
         List<User> findByRole(Enum<?> role);
 
     @Query("""
