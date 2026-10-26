@@ -17,10 +17,12 @@ The API base URL defaults to `http://localhost:8080/api/v1`. Copy `.env.example`
 
 ```dotenv
 VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_USE_MOCKS=false
+VITE_USE_MOCKS=true
 ```
 
-Set `VITE_USE_MOCKS=true` to use the typed in-memory mock entities in `src/mocks/entities.ts`. The mock-only presentation data is isolated in `src/mocks/demoOnly.ts`. In API mode, successful authentication stores the JWT and sends it as a Bearer token.
+The frontend defaults to demo mode and uses the typed in-memory mock entities in `src/mocks/entities.ts`. Demo sign-in is available from the account buttons; the demo password is `Password123!`. The mock-only presentation data is isolated in `src/mocks/demoOnly.ts`. To connect to the backend later, set `VITE_USE_MOCKS=false` and configure the reachable API URL. In API mode, successful authentication stores the JWT and sends it as a Bearer token.
+
+Restart the Vite dev server after changing `.env.local`.
 
 ## Build
 

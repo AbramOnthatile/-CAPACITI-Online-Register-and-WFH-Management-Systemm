@@ -6,6 +6,7 @@ import BrandLogo from '../../components/common/BrandLogo';
 import { UserRole, WfhStatus } from '../../api/types';
 import StatusBadge from '../../components/common/StatusBadge';
 import { demoOnly } from '../../mocks/demoOnly';
+import { useMocks } from '../../api/mockMode';
 
 const rolePath = {
   [UserRole.CANDIDATE]: '/candidate/dashboard',
@@ -50,9 +51,13 @@ const Login = () => {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
 
+    await authenticate(form.email, form.password);
+  };
+
+  const authenticate = async (email, password) => {
     setLoading(true);
     try {
-      const result = await login(form.email, form.password);
+      const result = await login(email, password);
       if (!result.success) {
         setErrors({ form: result.message });
         return;
@@ -63,6 +68,12 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoLogin = (email) => {
+    setForm({ email, password: 'Password123!' });
+    setErrors({});
+    void authenticate(email, 'Password123!');
   };
 
   return (
@@ -122,9 +133,10 @@ const Login = () => {
                   <button
                     key={acc.role}
                     type="button"
-                    disabled
-                    aria-disabled="true"
-                    title={demoOnly.notice}
+                    disabled={!useMocks || loading || authLoading}
+                    aria-disabled={!useMocks || loading || authLoading}
+                    title={!useMocks ? demoOnly.notice : undefined}
+                    onClick={() => handleDemoLogin(acc.email)}
                     className="group flex w-full items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs text-white hover:bg-white/20 transition-all text-left"
                   >
                     {/* MOCK-ONLY: not in backend */}
@@ -169,9 +181,13 @@ const Login = () => {
                 <button
                   key={acc.role}
                   type="button"
-                  disabled
-                  aria-disabled="true"
-                  title={demoOnly.notice}
+                  disabled={!useMocks}
+                  aria-disabled={!useMocks}
+                  title={!useMocks ? demoOnly.notice : undefined}
+                  onClick={() => {
+                    setForm({ email: acc.email, password: 'Password123!' });
+                    setErrors({});
+                  }}
                   className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
                     form.email === acc.email
                       ? 'border-[#6115D0] bg-[#6115D0] text-white shadow-sm'
