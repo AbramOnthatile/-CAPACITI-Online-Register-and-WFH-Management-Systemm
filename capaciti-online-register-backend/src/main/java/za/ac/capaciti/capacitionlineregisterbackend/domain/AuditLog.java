@@ -57,4 +57,13 @@ public class AuditLog {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public AuditLog(
+            User actor, String action, String targetType, String targetId, Map<String, Object> details) {
+        this.actor = actor;
+        this.action = action;
+        this.targetType = targetType;
+        this.targetId = targetId;
+        this.details = details;
+    }
 }
