@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, UserCheck, Building2, AlertTriangle, Search, ArrowRight } from 'lucide-react';
+import { Users, UserCheck, Building2, AlertTriangle, Search, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { TicketStatus, UserRole, WfhStatus } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 import StatCard from '../../components/common/StatCard';
 import Card from '../../components/common/Card';
-import StatusBadge from '../../components/common/StatusBadge';
+import StatusBadge, { ActiveBadge } from '../../components/common/StatusBadge';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
+import Avatar from '../../components/common/Avatar';
+import EmptyState from '../../components/common/EmptyState';
 
 const AdminDashboard = () => {
   const { users, usersLoading, usersError, wfh, wfhError, tickets, ticketsError, campuses, auditError } = useApp();
@@ -20,59 +24,85 @@ const AdminDashboard = () => {
   const errors = [usersError, wfhError, ticketsError, auditError].filter(Boolean);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2"><span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#F25251]">Executive Operations</span><span className="text-slate-300">·</span><span className="text-xs font-medium text-slate-500">User and service overview</span></div>
-          <h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">Admin Overview</h2>
-          <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">User access, attendance records, WFH requests, and support tickets.</p>
-        </div>
-        <Link to="/admin/reports" className="flex items-center gap-2 self-start rounded-xl bg-[#1D2951] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#0F172A]"><span>Programme Reports</span><ArrowRight className="h-3.5 w-3.5" /></Link>
+    <div className="page">
+      <PageHeader
+        eyebrow="Executive operations"
+        eyebrowClassName="text-salmon"
+        title="Admin overview"
+        description="User access, attendance records, WFH requests, and support tickets."
+        actions={<Link to="/admin/reports" className="btn btn-dark">Programme reports<ArrowRight className="h-4 w-4" /></Link>}
+      />
+
+      {errors.map((error) => <Alert key={error.message}>{error.message}</Alert>)}
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard icon={Users} title="Candidates" value={candidates.length} detail="Registered users" tone="primary" />
+        <StatCard icon={UserCheck} title="Tech Champions" value={champions.length} detail="Registered users" tone="slate" />
+        <StatCard icon={Building2} title="Campuses" value={campuses.length} detail="Configured hubs" tone="success" />
+        <StatCard icon={AlertTriangle} title="Open tickets" value={openTickets.length} detail="Requires follow-up" tone="warning" />
       </div>
 
-      {errors.map((error) => <p key={error.message} role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error.message}</p>)}
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={Users} title="Candidates" value={candidates.length} detail="Registered user records" tone="primary" />
-        <StatCard icon={UserCheck} title="Tech Champions" value={champions.length} detail="Registered user records" tone="slate" />
-        <StatCard icon={Building2} title="Campuses" value={campuses.length} detail="Configured campus hubs" tone="success" />
-        <StatCard icon={AlertTriangle} title="Open Tickets" value={openTickets.length} detail="Requires follow-up" tone="warning" />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-12">
+      <div className="grid gap-5 lg:grid-cols-12 lg:gap-6">
         <div className="lg:col-span-8">
-          <Card title="User Directory" subtitle={`${filtered.length} candidates matched`}>
-            <div className="mb-4 flex flex-wrap items-center gap-2.5">
-              <div className="relative min-w-[200px] flex-1"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search candidate name or email..." value={search} onChange={(event) => setSearch(event.target.value)} className="input pl-9 text-xs" /></div>
-              <Link to="/admin/users" className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-[#6115D0] hover:border-[#6115D0]">Manage Users</Link>
+          <Card title="User directory" subtitle={`${filtered.length} candidates matched`} actions={<Link to="/admin/users" className="link text-xs">Manage <ArrowRight className="h-3.5 w-3.5" /></Link>} contentClassName="p-0 sm:p-0">
+            <div className="border-b border-slate-100 p-4 sm:px-5">
+              <label className="relative block">
+                <span className="sr-only">Search candidates</span>
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type="search" placeholder="Search candidate name or email..." value={search} onChange={(event) => setSearch(event.target.value)} className="input pl-10" />
+              </label>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-slate-100">
-              <table className="min-w-full text-left text-xs">
-                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-4 py-3">Candidate</th><th className="px-4 py-3">Campus</th><th className="px-4 py-3">Champion</th><th className="px-4 py-3 text-right">Status</th></tr></thead>
-                <tbody className="divide-y divide-slate-100">
+            <div className="table-wrap">
+              <table className="table">
+                <thead><tr><th>Candidate</th><th className="hidden sm:table-cell">Campus</th><th className="hidden md:table-cell">Champion</th><th className="text-right">Status</th></tr></thead>
+                <tbody>
                   {filtered.slice(0, 8).map((candidate) => {
                     const champion = users.find((user) => user.id === candidate.championId);
-                    return <tr key={candidate.id} className="transition-colors hover:bg-slate-50/60"><td className="px-4 py-3"><p className="font-bold text-[#1D2951]">{candidate.fullName}</p><p className="font-mono text-[10px] text-slate-400">{candidate.email}</p></td><td className="px-4 py-3 font-medium text-slate-600">{candidate.campusName || '—'}</td><td className="px-4 py-3 font-medium text-slate-600">{champion?.fullName || '—'}</td><td className="px-4 py-3 text-right"><span className={`rounded-md border px-2 py-1 text-[10px] font-semibold ${candidate.active ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-600'}`}>{candidate.active ? 'Active' : 'Inactive'}</span></td></tr>;
+                    return (
+                      <tr key={candidate.id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <Avatar name={candidate.fullName} size="sm" />
+                            <div className="min-w-0"><p className="truncate font-bold text-navy">{candidate.fullName}</p><p className="truncate font-mono text-xs text-slate-400">{candidate.email}</p></div>
+                          </div>
+                        </td>
+                        <td className="hidden text-slate-600 sm:table-cell">{candidate.campusName || '—'}</td>
+                        <td className="hidden text-slate-600 md:table-cell">{champion?.fullName || '—'}</td>
+                        <td className="text-right"><ActiveBadge active={candidate.active} /></td>
+                      </tr>
+                    );
                   })}
-                  {!usersLoading && filtered.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No candidates found.</td></tr>}
-                  {usersLoading && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">Loading users...</td></tr>}
+                  {!filtered.length && <tr><td colSpan={4} className="table-empty">{usersLoading ? 'Loading users...' : 'No candidates found.'}</td></tr>}
                 </tbody>
               </table>
             </div>
           </Card>
         </div>
-        <div className="space-y-6 lg:col-span-4">
-          <Card title="Pending WFH Requests" subtitle="Awaiting review" actions={<Link to="/admin/reports" className="text-xs font-bold text-[#6115D0] hover:underline">Reports →</Link>}>
-            <div className="space-y-3">
-              {pendingWfh.slice(0, 4).map((request) => <div key={request.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-bold text-[#1D2951]">{request.userName}</p><StatusBadge status={request.status} /></div><p className="mt-1 font-mono text-[10px] text-slate-400">{request.startDate} – {request.endDate}</p><p className="mt-1 line-clamp-1 text-[11px] text-slate-500">{request.reason}</p></div>)}
-              {!pendingWfh.length && <p className="py-2 text-xs text-slate-400">No pending WFH requests.</p>}
-            </div>
+        <div className="space-y-5 lg:col-span-4 lg:space-y-6">
+          <Card title="Pending WFH requests" actions={<Link to="/admin/reports" className="link text-xs">Reports <ArrowRight className="h-3.5 w-3.5" /></Link>}>
+            {pendingWfh.length ? (
+              <ul className="list">
+                {pendingWfh.slice(0, 4).map((request) => (
+                  <li key={request.id} className="rounded-xl border border-slate-100 p-3.5">
+                    <div className="flex items-start justify-between gap-2"><p className="text-sm font-bold text-navy">{request.userName}</p><StatusBadge status={request.status} /></div>
+                    <p className="mt-0.5 font-mono text-xs text-slate-400">{request.startDate} – {request.endDate}</p>
+                    <p className="mt-1 line-clamp-1 text-xs text-slate-500">{request.reason}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : <EmptyState icon={CheckCircle2} description="No pending WFH requests." />}
           </Card>
-          <Card title="Open Blockers & Tickets" subtitle="Support ticket tracking" actions={<Link to="/admin/escalations" className="text-xs font-bold text-[#F25251] hover:underline">Manage →</Link>}>
-            <div className="space-y-3">
-              {openTickets.slice(0, 4).map((ticket) => <div key={ticket.id} className="rounded-xl border border-[#F25251]/20 bg-[#F25251]/5 p-3"><div className="flex items-center justify-between gap-2"><p className="text-xs font-bold text-[#1D2951]">{ticket.userName}</p><StatusBadge status={ticket.status} /></div><p className="mt-1 text-[11px] font-semibold text-slate-700">{ticket.title}</p></div>)}
-              {!openTickets.length && <p className="py-2 text-xs text-slate-400">No open tickets.</p>}
-            </div>
+          <Card title="Open blockers & tickets" actions={<Link to="/admin/escalations" className="link text-xs">Manage <ArrowRight className="h-3.5 w-3.5" /></Link>}>
+            {openTickets.length ? (
+              <ul className="list">
+                {openTickets.slice(0, 4).map((ticket) => (
+                  <li key={ticket.id} className="rounded-xl border border-salmon/20 bg-salmon/5 p-3.5">
+                    <div className="flex items-start justify-between gap-2"><p className="text-sm font-bold text-navy">{ticket.userName}</p><StatusBadge status={ticket.status} /></div>
+                    <p className="mt-1 text-xs font-semibold text-slate-700">{ticket.title}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : <EmptyState icon={CheckCircle2} description="No open tickets." />}
           </Card>
         </div>
       </div>

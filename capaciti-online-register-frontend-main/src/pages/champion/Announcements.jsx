@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Megaphone, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import Card from '../../components/common/Card';
+import PageHeader from '../../components/common/PageHeader';
+import Alert from '../../components/common/Alert';
 import { useApp } from '../../context/AppContext';
 
 const Announcements = () => {
@@ -36,55 +38,26 @@ const Announcements = () => {
   };
 
   return (
-    <div className="max-w-3xl space-y-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#6115D0]">Candidate Communications</span>
-          <span className="text-slate-300">·</span>
-          <span className="text-xs font-medium text-slate-500">Notifications</span>
-        </div>
-        <h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">Announcements</h2>
-        <p className="mt-1 text-xs text-slate-500">Send an update that appears only in active candidates' notifications.</p>
-      </div>
+    <div className="page-narrow">
+      <PageHeader eyebrow="Candidate communications" title="Announcements" description="Send an update that appears in active candidates' notifications." />
 
-      {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}
-      {feedback && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{feedback}</p>}
+      <Alert>{error}</Alert>
+      <Alert tone="success">{feedback}</Alert>
 
       <Card title="New announcement" subtitle="All active candidates will receive this in their Notifications page.">
         <form onSubmit={(event) => void submitAnnouncement(event)} className="space-y-4">
-          <label className="block text-xs font-bold text-slate-700">
-            Title
-            <input
-              required
-              maxLength={120}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="input mt-1 text-xs"
-              placeholder="Announcement title"
-              disabled={sending}
-            />
+          <label className="field">
+            <span className="field-label">Title</span>
+            <input required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="input" placeholder="Announcement title" disabled={sending} />
           </label>
-          <label className="block text-xs font-bold text-slate-700">
-            Message
-            <textarea
-              required
-              rows="5"
-              maxLength={2000}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              className="input mt-1 text-xs"
-              placeholder="Share an important update with candidates."
-              disabled={sending}
-            />
+          <label className="field">
+            <span className="field-label">Message</span>
+            <textarea required rows="5" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} className="input" placeholder="Share an important update with candidates." disabled={sending} />
           </label>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={sending}
-              className="flex items-center gap-2 rounded-xl bg-[#6115D0] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#4F11AA] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {sending ? <Megaphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-              {sending ? 'Sending...' : 'Send Announcement'}
+          <div className="flex justify-end border-t border-slate-100 pt-4">
+            <button type="submit" disabled={sending} className="btn btn-primary w-full sm:w-auto">
+              <Send className="h-4 w-4" />
+              {sending ? 'Sending...' : 'Send announcement'}
             </button>
           </div>
         </form>

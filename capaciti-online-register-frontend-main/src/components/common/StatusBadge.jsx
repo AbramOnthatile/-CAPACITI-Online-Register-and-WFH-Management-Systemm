@@ -15,12 +15,19 @@ const StatusBadge = ({ children, status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wide ${toneClasses[metadata.tone]}`}
+      className={`pill ${toneClasses[metadata.tone]}`}
     >
-      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      <Icon className="h-3 w-3" aria-hidden="true" />
       <span>{children || metadata.label}</span>
     </span>
   );
 };
+
+export const ActiveBadge = ({ active }) => (
+  <span className={`pill ${active ? toneClasses.success : toneClasses.neutral}`}>
+    <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-slate-400'}`} aria-hidden="true" />
+    {active ? 'Active' : 'Inactive'}
+  </span>
+);
 
 export default StatusBadge;
