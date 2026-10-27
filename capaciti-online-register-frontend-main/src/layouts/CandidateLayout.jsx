@@ -1,21 +1,17 @@
 import {
-  LayoutDashboard,
+  Award,
+  Bell,
+  CheckSquare,
   Clock3,
   History,
   Home,
-  CheckSquare,
-  Bell,
-  User,
-  MapPin,
+  LayoutDashboard,
   LifeBuoy,
-  Award,
   Menu,
+  User,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
-import BrandLogo from '../components/common/BrandLogo';
-import TopBar from '../components/common/TopBar';
 import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
+import AppShell from './AppShell';
 
 const navItems = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: LayoutDashboard },
@@ -58,33 +54,18 @@ const getPageInfo = (path) => {
   return { title: 'Candidate Portal', subtitle: 'CAPACITI Workforce Management' };
 };
 
-export const CandidateLayout = () => {
-  const { user } = useAuth();
-  return (
-    <div className="min-h-screen bg-[#F8F9FC]">
-      {mobileOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-[#1D2951]/40 backdrop-blur-sm md:hidden"
-          aria-label="Close navigation"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <Sidebar
-        mobileOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        onLogout={handleLogout}
-        user={user}
-      />
-      <div className="flex flex-col md:pl-64">
-        <TopBar onOpenMenu={() => setMobileOpen(true)} title={title} subtitle={subtitle} />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
-          <Outlet />
-        </main>
-      </div>
-      <PromptCheckInPopup />
-    </div>
-  );
-};
+export const CandidateLayout = () => (
+  <>
+    <AppShell
+      navItems={navItems}
+      homePath="/candidate/dashboard"
+      accent="primary"
+      roleLabel="Candidate"
+      getPageInfo={getPageInfo}
+      mobileTabs={mobileTabs}
+    />
+    <PromptCheckInPopup />
+  </>
+);
 
 export default CandidateLayout;
