@@ -105,8 +105,8 @@ export function useWfhRequestsApi(userId?: string, enabled = true, params: WfhQu
       const champion = mockUsers.find((user) => user.role === 'TECH_CHAMP');
       const updated = {
         ...item,
-        status: decision.status,
-        reviewComment: decision.reviewComment,
+        status: decision.approved ? WfhStatus.APPROVED : WfhStatus.REJECTED,
+        reviewComment: decision.comment,
         reviewedByName: champion?.fullName ?? null,
         reviewedAt: new Date().toISOString(),
       };

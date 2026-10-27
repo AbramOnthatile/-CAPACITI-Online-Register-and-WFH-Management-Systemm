@@ -9,6 +9,7 @@ import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
+import ClockButton from '../../components/common/ClockButton';
 import { createDraftKey, getCurrentCoordinates } from '../../lib/attendanceAction';
 import { Skeleton } from '../../components/common/RequestState';
 import { getStatusMetadata } from '../../lib/status';
@@ -223,14 +224,23 @@ const CandidateDashboard = () => {
             </div>
 
             {!clockedIn && (
-              <button type="button" disabled={attendanceLoading} onClick={() => setAction('clock-in')} className="btn btn-primary btn-lg btn-block">
-                <CheckCircle2 className="h-5 w-5" />Clock in
-              </button>
+              <ClockButton
+                action="clock-in"
+                icon={CheckCircle2}
+                disabled={attendanceLoading}
+                pending={saving}
+                onClick={() => setAction('clock-in')}
+                className="btn btn-primary btn-lg btn-block"
+              />
             )}
             {working && (
-              <button type="button" disabled={saving} onClick={() => setAction('clock-out')} className="btn btn-dark btn-lg btn-block">
-                <Clock className="h-5 w-5" />Clock out
-              </button>
+              <ClockButton
+                action="clock-out"
+                icon={Clock}
+                pending={saving}
+                onClick={() => setAction('clock-out')}
+                className="btn btn-dark btn-lg btn-block"
+              />
             )}
             {clockedOut && <Alert tone="success">Attendance complete for today.</Alert>}
 

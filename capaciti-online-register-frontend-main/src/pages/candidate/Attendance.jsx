@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Coffee, UtensilsCrossed, Building2, Home, Info, History, ChevronRight, LogOut } from 'lucide-react';
+import { Clock, Coffee, UtensilsCrossed, Building2, Home, Info, History, ChevronRight } from 'lucide-react';
 import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
 import { WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';
@@ -10,6 +10,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
+import ClockButton from '../../components/common/ClockButton';
 import { ErrorState, Skeleton } from '../../components/common/RequestState';
 import { createDraftKey, getCurrentCoordinates } from '../../lib/attendanceAction';
 import { formatSastTime } from '../../lib/time';
@@ -172,9 +173,14 @@ const Attendance = () => {
               <div>
                 <p className="label-caps mb-2">Actions</p>
                 {!hasClockedIn && (
-                  <button type="button" disabled={working} onClick={() => setConfirmation('clock-in')} className="btn btn-primary btn-lg btn-block sm:w-auto">
-                    <Clock className="h-5 w-5" />Clock in for today
-                  </button>
+                  <ClockButton
+                    action="clock-in"
+                    icon={Clock}
+                    label="Clock in for today"
+                    pending={working}
+                    onClick={() => setConfirmation('clock-in')}
+                    className="btn btn-primary btn-lg btn-block sm:w-auto"
+                  />
                 )}
                 {hasClockedIn && !hasClockedOut && (
                   <div className="grid gap-2 sm:flex sm:flex-wrap">
@@ -192,9 +198,13 @@ const Attendance = () => {
                         </button>
                       </div>
                     ))}
-                    <button type="button" disabled={working} onClick={() => setConfirmation('clock-out')} className="btn btn-dark">
-                      <LogOut className="h-4 w-4" />Clock out
-                    </button>
+                    <ClockButton
+                      action="clock-out"
+                      pending={working}
+                      onClick={() => setConfirmation('clock-out')}
+                      className="btn btn-dark"
+                      iconClassName="h-4 w-4"
+                    />
                   </div>
                 )}
                 {hasClockedOut && <Alert tone="success">Attendance recorded for today.</Alert>}

@@ -204,8 +204,8 @@ export interface CreateWfhRequest {
 }
 
 export interface WfhDecision {
-  status: WfhStatus.APPROVED | WfhStatus.REJECTED;
-  reviewComment: string;
+  approved: boolean;
+  comment: string | null;
 }
 
 export interface DailyPrompt {

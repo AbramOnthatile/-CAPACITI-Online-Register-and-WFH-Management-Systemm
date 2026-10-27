@@ -52,6 +52,13 @@ public class User extends BaseEntity {
     private boolean active = true;
 
     public String getFullName() {
-        return firstName + " " + lastName;
+        String normalizedFirstName = firstName == null ? "" : firstName.trim();
+        String normalizedLastName = lastName == null ? "" : lastName.trim();
+        if (normalizedFirstName.isEmpty()) {
+            return normalizedLastName;
+        }
+        return normalizedLastName.isEmpty()
+                ? normalizedFirstName
+                : normalizedFirstName + " " + normalizedLastName;
     }
 }
