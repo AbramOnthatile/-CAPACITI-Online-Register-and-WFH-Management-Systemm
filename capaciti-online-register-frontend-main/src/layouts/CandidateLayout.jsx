@@ -12,7 +12,10 @@ import {
   Menu,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import AppShell from './AppShell';
+import { useState } from 'react';
+import BrandLogo from '../components/common/BrandLogo';
+import TopBar from '../components/common/TopBar';
+import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
 
 const navItems = [
   { label: 'Dashboard', to: '/candidate/dashboard', icon: LayoutDashboard },
@@ -58,14 +61,29 @@ const getPageInfo = (path) => {
 export const CandidateLayout = () => {
   const { user } = useAuth();
   return (
-    <AppShell
-      navItems={navItems}
-      mobileTabs={mobileTabs}
-      homePath="/candidate/dashboard"
-      accent="primary"
-      workspace={{ label: 'Candidate Workspace', icon: MapPin, detail: user?.campusName || 'No campus assigned' }}
-      getPageInfo={getPageInfo}
-    />
+    <div className="min-h-screen bg-[#F8F9FC]">
+      {mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-[#1D2951]/40 backdrop-blur-sm md:hidden"
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        onLogout={handleLogout}
+        user={user}
+      />
+      <div className="flex flex-col md:pl-64">
+        <TopBar onOpenMenu={() => setMobileOpen(true)} title={title} subtitle={subtitle} />
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
+          <Outlet />
+        </main>
+      </div>
+      <PromptCheckInPopup />
+    </div>
   );
 };
 

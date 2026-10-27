@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, Send } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Clock3 } from 'lucide-react';
 import { PromptStage, PromptStatus } from '../../api/types';
 import { getStatusMetadata } from '../../lib/status';
 import { useApp } from '../../context/AppContext';
@@ -10,105 +10,72 @@ import Alert from '../../components/common/Alert';
 
 const stages = [PromptStage.MORNING_KICKOFF, PromptStage.MIDDAY_PULSE, PromptStage.EOD_WRAP_UP];
 
-const formatServerTime = (value) => new Intl.DateTimeFormat('en-ZA', {
-  timeZone: 'Africa/Johannesburg',
-  dateStyle: 'medium',
-  timeStyle: 'short',
-}).format(new Date(value));
-
 const CheckIns = () => {
-  const { prompts, promptServerTime, promptsError, submitPrompt } = useApp();
-  const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
-  const [responses, setResponses] = useState({});
-  const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState({});
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setServerElapsedSeconds((seconds) => seconds + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const formatCountdown = (expiresAt) => {
-    const remainingSeconds = Math.floor((Date.parse(expiresAt) - Date.parse(promptServerTime)) / 1000) - serverElapsedSeconds;
-    if (remainingSeconds <= 0) return 'Expired';
-    const minutes = Math.floor(remainingSeconds / 60).toString().padStart(2, '0');
-    const seconds = (remainingSeconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-  };
-
-  const handleSubmit = async (prompt) => {
-    const response = responses[prompt.id]?.trim() || prompt.response || '';
-    if (!response) {
-      setErrors((current) => ({ ...current, [prompt.id]: 'Enter a response before submitting.' }));
-      return;
-    }
-    setErrors((current) => ({ ...current, [prompt.id]: '' }));
-    try {
-      const result = await submitPrompt(prompt.id, {
-        draftKey: `${prompt.id}-${crypto.randomUUID()}`,
-        response,
-      });
-      setSubmitted((current) => ({ ...current, [prompt.id]: result.quality.feedbackMessage }));
-    } catch (error) {
-      setErrors((current) => ({
-        ...current,
-        [prompt.id]: error instanceof Error ? error.message : 'Check-in could not be submitted.',
-      }));
-    }
-  };
+  const { prompts, activePrompts, promptsError, promptServerTime } = useApp();
+  const activePromptIds = new Set(activePrompts.map((prompt) => prompt.id));
 
   return (
-    <div className="page-narrow">
-      <PageHeader eyebrow="Daily prompts" title="Check-ins" description={`Server time: ${formatServerTime(promptServerTime)}`} />
+    <div className="mx-auto max-w-4xl space-y-5">
+      <header>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#6115D0]">Candidate Check-ins · Daily Prompts</p>
+        <h2 className="mt-1 text-2xl font-black text-[#1D2951] sm:text-3xl">Check-ins</h2>
+        <p className="mt-1 text-xs text-slate-500">Respond to each time-boxed prompt while its check-in window is open.</p>
+        {promptServerTime && <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400"><Clock3 className="h-3.5 w-3.5" />Server time: {formatServerTime(promptServerTime)}</p>}
+      </header>
 
-      <Alert>{promptsError?.message}</Alert>
+      {promptsError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{promptsError.message}</p>}
 
-      {stages.map((stage, index) => {
-        const prompt = prompts.find((item) => item.stage === stage);
-        const stageLabel = getStatusMetadata(stage).label;
-        const active = prompt?.status === PromptStatus.ACTIVE;
-        return (
-          <Card
-            key={stage}
-            title={<span className="flex items-center gap-2.5"><span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold ${active ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{index + 1}</span>{stageLabel}</span>}
-            subtitle={prompt ? `Scheduled ${formatServerTime(prompt.scheduledAt)}` : 'No prompt scheduled'}
-            actions={prompt && <StatusBadge status={prompt.status} />}
-            className={active ? 'border-primary-600/30' : ''}
-          >
-            {prompt ? (
-              <div className="space-y-4">
-                {prompt.expiresAt && active && (
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                    <Clock className="h-3.5 w-3.5 text-primary-600" />Expires in <span className="font-mono text-navy">{formatCountdown(prompt.expiresAt)}</span>
-                  </p>
+      <Card title="Today’s check-ins" subtitle="Your prompts are generated only for approved WFH weekdays.">
+        <div className="space-y-3">
+          {stages.map((stage) => {
+            const prompt = prompts.find((item) => item.stage === stage);
+            const isActive = prompt && activePromptIds.has(prompt.id);
+            return (
+              <article key={stage} className="rounded-xl border border-slate-100 p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-xs font-bold text-[#1D2951]">{getStatusMetadata(stage).label}</h3>
+                  {prompt ? <StatusBadge status={isActive ? PromptStatus.ACTIVE : prompt.status} /> : <span className="text-[11px] text-slate-400">Not scheduled</span>}
+                </div>
+                {prompt && (
+                  <>
+                    <p className="mt-1.5 text-[10px] text-slate-500">
+                      Opens {formatServerTime(prompt.scheduledAt)} · expires {formatServerTime(prompt.expiresAt)}
+                    </p>
+                    {isActive && (
+                      <Link to="/candidate/dashboard" className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-[#6115D0] hover:underline">
+                        Open check-in <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    )}
+                    {prompt.status === PromptStatus.SUBMITTED && prompt.response && (
+                      <dl className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+                        {Object.entries(prompt.response).map(([key, value]) => (
+                          <div key={key} className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-2 text-[10px]">
+                            <dt className="font-semibold capitalize text-slate-500">{key.replace(/[A-Z]/g, (letter) => ` ${letter}`).replaceAll('_', ' ')}</dt>
+                            <dd className="whitespace-pre-wrap break-words text-slate-700">{Array.isArray(value) ? value.join(', ') : String(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
+                    {prompt.attemptCount > 0 && prompt.status !== PromptStatus.SUBMITTED && (
+                      <p className="mt-2 text-[10px] text-slate-400">Quality review attempts: {prompt.attemptCount}</p>
+                    )}
+                  </>
                 )}
-                <label className="field">
-                  <span className="field-label">Your response</span>
-                  <textarea
-                    rows="3"
-                    className="input"
-                    value={responses[prompt.id] ?? prompt.response ?? ''}
-                    disabled={!active}
-                    placeholder={active ? `Share your ${stageLabel.toLowerCase()} update...` : ''}
-                    onChange={(event) => setResponses((current) => ({ ...current, [prompt.id]: event.target.value }))}
-                  />
-                </label>
-                <Alert>{errors[prompt.id]}</Alert>
-                {submitted[prompt.id] && <Alert tone="success">{submitted[prompt.id]}</Alert>}
-                {active && (
-                  <button type="button" onClick={() => void handleSubmit(prompt)} className="btn btn-primary btn-block">
-                    <Send className="h-4 w-4" />Submit check-in
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="flex items-center gap-2 text-sm text-slate-500"><CheckCircle2 className="h-4 w-4 text-slate-300" />This prompt is not available.</p>
-            )}
-          </Card>
-        );
-      })}
+              </article>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 };
+
+function formatServerTime(value) {
+  return new Intl.DateTimeFormat('en-ZA', {
+    timeZone: 'Africa/Johannesburg',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
 
 export default CheckIns;

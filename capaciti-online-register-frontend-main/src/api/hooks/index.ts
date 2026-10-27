@@ -394,29 +394,39 @@ export function usePromptsApi(enabled = true, userId?: string) {
       save: (data) => activePersistence.save(data.prompts),
     },
   );
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const interval = window.setInterval(() => void active.refresh(), 30000);
+    return () => window.clearInterval(interval);
+  }, [active.refresh, enabled]);
+
   const submit = async (id: string, submission: PromptSubmission): Promise<PromptSubmissionResult> => {
     if (useMocks) {
       const prompt = collection.data.prompts.find((item) => item.id === id);
       if (!prompt) throw new Error('The check-in prompt could not be found.');
       if (prompt.status !== PromptStatus.ACTIVE) throw new Error('This check-in is no longer accepting responses.');
-      const result: PromptSubmissionResult = {
-        id,
+      const attempt = prompt.attemptCount + 1;
+      const submittedAt = new Date().toISOString();
+      const submittedPrompt: DailyPrompt = {
+        ...prompt,
         status: PromptStatus.SUBMITTED,
-        submittedAt: new Date().toISOString(),
-        attemptCount: prompt.attemptCount + 1,
-        aiQualityFlag: false,
-        response: submission.response,
-        quality: { accepted: true, isValid: true, feedbackMessage: 'Submission accepted.', attempt: 1, flagged: false },
+        submittedAt,
+        attemptCount: attempt,
+        response: submission,
+      };
+      const result: PromptSubmissionResult = {
+        prompt: submittedPrompt,
+        quality: { accepted: true, isValid: true, feedbackMessage: 'Check-in submitted.', attempt, flagged: false },
       };
       collection.replaceData({
         ...collection.data,
-        prompts: collection.data.prompts.map((prompt) => prompt.id === id
-          ? { ...prompt, status: PromptStatus.SUBMITTED, submittedAt: result.submittedAt, attemptCount: result.attemptCount, response: submission.response }
-          : prompt),
+        prompts: collection.data.prompts.map((item) => item.id === id
+          ? submittedPrompt
+          : item),
       });
       active.replaceData({
         ...active.data,
-        prompts: active.data.prompts.filter((prompt) => prompt.id !== id),
+        prompts: active.data.prompts.filter((item) => item.id !== id),
       });
       const candidate = mockUsers.find((user) => user.id === userId) ?? mockUsers[0];
       const savedReviews = readMockCollection('checkin-reviews', mockCheckinReviews);
@@ -425,7 +435,7 @@ export function usePromptsApi(enabled = true, userId?: string) {
         userName: candidate.fullName,
         stage: prompt.stage,
         promptDate: prompt.promptDate,
-        response: submission.response,
+        response: JSON.stringify(submission),
         feedbackComment: '',
       };
       writeMockValue('checkin-reviews', [review, ...savedReviews]);

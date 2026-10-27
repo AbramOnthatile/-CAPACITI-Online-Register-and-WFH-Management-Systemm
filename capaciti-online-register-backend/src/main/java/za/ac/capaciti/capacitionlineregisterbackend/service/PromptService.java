@@ -40,16 +40,19 @@ public class PromptService implements IPromptService {
     private final UserRepository userRepository;
     private final PromptMapper promptMapper;
     private final IQualityGateService qualityGateService;
+    private final PromptSubmissionWriter promptSubmissionWriter;
 
     public PromptService(
             DailyPromptRepository dailyPromptRepository,
             UserRepository userRepository,
             PromptMapper promptMapper,
-            IQualityGateService qualityGateService) {
+            IQualityGateService qualityGateService,
+            PromptSubmissionWriter promptSubmissionWriter) {
         this.dailyPromptRepository = dailyPromptRepository;
         this.userRepository = userRepository;
         this.promptMapper = promptMapper;
         this.qualityGateService = qualityGateService;
+        this.promptSubmissionWriter = promptSubmissionWriter;
     }
 
     @Override
@@ -118,19 +121,11 @@ public class PromptService implements IPromptService {
                 : qualityGateService.check(user, QualityContext.PROMPT, promptId.toString(), freeText);
 
         if (!quality.accepted()) {
-            prompt.setAttemptCount(quality.attempt());
-            DailyPrompt savedPrompt = dailyPromptRepository.save(prompt);
-            return new SubmitPromptResponse(promptMapper.toDto(savedPrompt), quality);
+            return promptSubmissionWriter.recordRetry(promptId, user, now, quality);
         }
 
-        prompt.setResponse(responseFor(prompt.getStage(), request));
-        prompt.setStatus(PromptStatus.SUBMITTED);
-        prompt.setSubmittedAt(now);
-        prompt.setAttemptCount(quality.attempt());
-        prompt.setAiQualityFlag(quality.flagged());
-        // TODO Member 2: link AttendanceRecordRepository.findByUserAndAttendanceDate(user, prompt.getPromptDate()) when available.
-        DailyPrompt savedPrompt = dailyPromptRepository.save(prompt);
-        return new SubmitPromptResponse(promptMapper.toDto(savedPrompt), quality);
+        return promptSubmissionWriter.complete(
+                promptId, user, now, responseFor(prompt.getStage(), request), quality);
     }
 
     private User findUser(String email) {

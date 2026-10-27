@@ -17,7 +17,7 @@ const formatClock = (value) => (value
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
-  const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut, wfh, wfhLoading, wfhError, prompts, promptsError, promptServerTime } = useApp();
+  const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut, wfh, wfhLoading, wfhError, prompts, activePrompts, promptsError, promptServerTime } = useApp();
   const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
   const [action, setAction] = useState('');
   const [actionError, setActionError] = useState('');
@@ -45,7 +45,7 @@ const CandidateDashboard = () => {
   };
   const candidateWfh = wfh.filter((request) => request.userId === user?.id);
   const approvedWfh = candidateWfh.filter((request) => request.status === WfhStatus.APPROVED);
-  const nextPrompt = prompts.find((prompt) => prompt.status === PromptStatus.ACTIVE);
+  const nextPrompt = activePrompts[0];
   const currentMode = attendanceToday?.workMode ?? selectedMode;
   const clockedIn = Boolean(attendanceToday?.clockInAt);
   const clockedOut = Boolean(attendanceToday?.clockOutAt);
@@ -151,15 +151,8 @@ const CandidateDashboard = () => {
             <ul className="list">
               {Object.values(PromptStage).map((stage) => {
                 const prompt = prompts.find((item) => item.stage === stage);
-                return (
-                  <li key={stage} className="list-row">
-                    <div className="min-w-0">
-                      <p className="font-bold text-navy">{getStatusMetadata(stage).label}</p>
-                      {prompt && <p className="mt-0.5 text-xs text-slate-400">Expires {new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(prompt.expiresAt))}</p>}
-                    </div>
-                    {prompt ? <StatusBadge status={prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}
-                  </li>
-                );
+                const isActive = prompt && activePrompts.some((activePrompt) => activePrompt.id === prompt.id);
+                return <div key={stage} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-xs font-bold text-[#1D2951]">{getStatusMetadata(stage).label}</p>{prompt && <p className="mt-1 text-[10px] text-slate-400">Expires {new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(prompt.expiresAt))}</p>}</div>{prompt ? <StatusBadge status={isActive ? PromptStatus.ACTIVE : prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}</div>;
               })}
             </ul>
           </Card>

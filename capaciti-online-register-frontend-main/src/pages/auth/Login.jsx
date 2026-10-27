@@ -92,23 +92,12 @@ const Login = () => {
 
           {/* Top: Logo & Division */}
           <div className="relative z-10">
-            <div className="flex items-center gap-3">
+            <div className="inline-flex rounded-lg bg-white px-3 py-2">
               <img
-                src="/images/capaciti-icon.svg"
-                alt="CAPACITI"
-                className="h-10 w-10 object-contain drop-shadow"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
+                src="/images/capaciti-logo1.png"
+                alt="CAPACITI, a division of UVU Africa"
+                className="h-12 w-auto max-w-full object-contain"
               />
-              <div>
-                <span className="text-2xl font-black tracking-tight text-white leading-none">
-                  CAPA<span className="text-[#F25251]">CITI</span>
-                </span>
-                <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#F1D1D1]">
-                  A Division of UVU Africa
-                </p>
-              </div>
             </div>
 
             <div className="mt-10 space-y-3">

@@ -7,8 +7,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import za.ac.capaciti.capacitionlineregisterbackend.domain.DailyPrompt;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
@@ -17,6 +19,10 @@ import za.ac.capaciti.capacitionlineregisterbackend.enums.PromptStage;
 public interface DailyPromptRepository extends JpaRepository<DailyPrompt, UUID> {
 
     Optional<DailyPrompt> findByUserAndPromptDateAndStage(User user, LocalDate date, PromptStage stage);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM DailyPrompt p WHERE p.id = :id")
+    Optional<DailyPrompt> findByIdForSubmission(@Param("id") UUID id);
 
     boolean existsByUserAndPromptDateAndStage(User user, LocalDate date, PromptStage stage);
 
