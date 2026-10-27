@@ -3,6 +3,7 @@ import { clearApiToken, getApiToken, setApiToken } from '../api/client';
 import { useAuthApi } from '../api/hooks';
 import { useMocks } from '../api/mockMode';
 import { readMockValue, removeMockValue, writeMockValue } from '../mocks/storage';
+import { clearApiQueryCache } from '../api/hooks/queryClient';
 
 const AuthContext = createContext(null);
 
@@ -29,9 +30,23 @@ export const AuthProvider = ({ children }) => {
     return { success: true, user: result.user };
   }, [authApi]);
 
+  const refreshSession = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      setUser(await authApi.me());
+    } catch (requestError) {
+      setError(requestError);
+      throw requestError;
+    } finally {
+      setLoading(false);
+    }
+  }, [authApi]);
+
   const logout = useCallback(() => {
     if (!useMocks) clearApiToken();
     else removeMockValue('session-user');
+    clearApiQueryCache();
     setUser(null);
   }, []);
 
@@ -43,8 +58,8 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const value = useMemo(
-    () => ({ user, loading, error, isAuthenticated: Boolean(user), login, logout, updateCurrentUser }),
-    [user, loading, error, login, logout, updateCurrentUser],
+    () => ({ user, loading, error, isAuthenticated: Boolean(user), login, logout, refreshSession, updateCurrentUser }),
+    [user, loading, error, login, logout, refreshSession, updateCurrentUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

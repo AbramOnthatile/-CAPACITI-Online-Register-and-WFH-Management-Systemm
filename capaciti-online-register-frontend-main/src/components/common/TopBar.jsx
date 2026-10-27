@@ -4,6 +4,7 @@ import { Clock, Bell, Menu, Shield, GraduationCap, Award, LogOut, ChevronDown, U
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../api/types';
+import { formatSastDate } from '../../lib/time';
 import Avatar from './Avatar';
 
 const roleBadges = {
@@ -45,19 +46,17 @@ const TopBar = ({ onOpenMenu, title, subtitle, mobileTabs = false }) => {
     navigate('/login');
   };
 
-  const formattedTime = new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg',
+  const currentTimeIso = currentTime.toISOString();
+  const formattedTime = formatSastDate(currentTimeIso, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).format(currentTime);
-
-  const formattedDate = new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg',
+  });
+  const formattedDate = formatSastDate(currentTimeIso, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-  }).format(currentTime);
+  });
 
   const roleBadge = roleBadges[user?.role] ?? roleBadges[UserRole.ADMIN];
   const RoleIcon = roleBadge.icon;

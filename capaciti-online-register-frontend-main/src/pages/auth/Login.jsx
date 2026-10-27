@@ -8,6 +8,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { demoOnly } from '../../mocks/demoOnly';
 import { useMocks } from '../../api/mockMode';
 import { useApp } from '../../context/AppContext';
+import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
 
 const rolePath = {
   [UserRole.CANDIDATE]: '/candidate/dashboard',
@@ -21,7 +22,7 @@ const iconByRole = {
 };
 const Login = () => {
   const navigate = useNavigate();
-  const { user, login, loading: authLoading, error: authError } = useAuth();
+  const { user, login, loading: authLoading, error: authError, refreshSession } = useAuth();
   const { users } = useApp();
   const demoAccounts = demoOnly.demoAccounts.map((account) => {
     const currentUser = users.find((item) => item.role === account.role);
@@ -70,7 +71,11 @@ const Login = () => {
       }
       navigate(rolePath[result.user.role] || '/login');
     } catch (loginError) {
-      setErrors({ form: loginError instanceof Error ? loginError.message : 'Sign in failed.' });
+      setErrors({
+        form: getUserErrorMessage(loginError, 'Sign in failed.'),
+        retryable: canRetryError(loginError),
+        ...(loginError instanceof ApiError ? loginError.fieldErrors : {}),
+      });
     } finally {
       setLoading(false);
     }
@@ -165,6 +170,7 @@ const Login = () => {
             </p>
           </div>
           {authError && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{authError.message}</p>}
+          {canRetryError(authError) && <button type="button" className="btn btn-secondary btn-sm mb-4" disabled={authLoading} onClick={() => void refreshSession()}>Retry</button>}
 
           {/* Quick preset selector chips */}
           <div className="mb-6">
@@ -208,7 +214,7 @@ const Login = () => {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
-              {errors.email && <p className="mt-1 text-xs font-medium text-rose-600">{errors.email}</p>}
+              {(getFieldError(errors, 'email') || errors.email) && <p className="mt-1 text-xs font-medium text-rose-600">{getFieldError(errors, 'email') || errors.email}</p>}
             </div>
 
             <div>
@@ -236,13 +242,23 @@ const Login = () => {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-xs font-medium text-rose-600">{errors.password}</p>}
+              {(getFieldError(errors, 'password') || errors.password) && <p className="mt-1 text-xs font-medium text-rose-600">{getFieldError(errors, 'password') || errors.password}</p>}
             </div>
 
             {errors.form && (
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
                 {errors.form}
               </div>
+            )}
+            {errors.retryable && (
+              <button
+                type="button"
+                disabled={loading || authLoading}
+                onClick={() => void authenticate(form.email, form.password)}
+                className="btn btn-secondary btn-sm"
+              >
+                Retry
+              </button>
             )}
 
             <button

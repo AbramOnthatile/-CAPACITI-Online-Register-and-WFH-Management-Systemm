@@ -2,17 +2,23 @@ import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, Clock3, MessageSquare, ShieldAlert, Check, TicketCheck, Paperclip } from 'lucide-react';
 import { TicketStatus, TicketType } from '../../api/types';
 import { useApp } from '../../context/AppContext';
+import { useFilesApi } from '../../api/hooks';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
 import { getStatusMetadata } from '../../lib/status';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { openSignedAttachment } from '../../lib/storageAttachment';
+import { formatSastDateTime } from '../../lib/time';
 
 const BlockersTickets = () => {
-  const { tickets, ticketsLoading, ticketsError, resolveTicket } = useApp();
+  const { tickets, ticketsLoading, ticketsError, resolveTicket, isDemoMode } = useApp();
+  const { getSignedUrl } = useFilesApi();
   const [resolutionNotes, setResolutionNotes] = useState({});
   const [resolvingId, setResolvingId] = useState('');
   const [error, setError] = useState('');
+  const [attachmentError, setAttachmentError] = useState('');
 
   const handleResolve = async (ticketId) => {
     setError('');
@@ -26,12 +32,24 @@ const BlockersTickets = () => {
     }
   };
 
+  const viewAttachment = async (event, attachmentUrl) => {
+    event.preventDefault();
+    setAttachmentError('');
+    try {
+      await openSignedAttachment(attachmentUrl, getSignedUrl);
+    } catch (caught) {
+      setAttachmentError(caught instanceof Error ? caught.message : 'The attachment could not be opened.');
+    }
+  };
+
   return (
     <div className="page">
-      <PageHeader eyebrow="Support & blocker oversight" eyebrowClassName="text-salmon" title="Blockers & tickets" description="Support tickets submitted by candidates and their resolution status." />
+      <PageHeader eyebrow="Support & blocker oversight" eyebrowClassName="text-salmon" title="Blockers & tickets" description="Support tickets submitted by candidates and their resolution status." actions={<StatusBadge status={TicketStatus.OPEN}>Demo</StatusBadge>} />
 
-      <Alert>{error || ticketsError?.message}</Alert>
-      {ticketsLoading && <p className="meta">Loading support tickets...</p>}
+      <ErrorState message={error || ticketsError?.message} />
+      <ErrorState message={attachmentError} />
+      {!isDemoMode && <Alert tone="info">Administrator ticket data and actions are demo-only; use the Tech Champion ticket queue for live records.</Alert>}
+      {ticketsLoading && <Skeleton label="Loading support tickets" />}
 
       <ul className="list">
         {tickets.map((ticket) => {
@@ -57,10 +75,10 @@ const BlockersTickets = () => {
                 <div className="space-y-2">
                   <p className="text-sm leading-relaxed text-slate-700">{ticket.description}</p>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                    <StatusBadge status={ticket.workMode} />
-                    <span>{Math.max(0, Math.floor((Date.now() - Date.parse(ticket.createdAt)) / 60000))} minutes old</span>
+                    <StatusBadge status={ticket.type} />
+                    <span>Created {formatSastDateTime(ticket.createdAt)}</span>
                   </div>
-                  {ticket.attachmentUrl && <a href={ticket.attachmentUrl} target="_blank" rel="noreferrer" className="link text-xs"><Paperclip className="h-3.5 w-3.5" />View attachment</a>}
+                  {ticket.attachmentUrl && <a href="#" onClick={(event) => void viewAttachment(event, ticket.attachmentUrl)} className="link text-xs"><Paperclip className="h-3.5 w-3.5" />View attachment</a>}
                 </div>
                 {!resolved ? (
                   <div className="space-y-3 border-t border-slate-100 pt-4">
@@ -69,7 +87,7 @@ const BlockersTickets = () => {
                       <textarea rows="2" className="input" value={resolutionNotes[ticket.id] ?? ''} onChange={(event) => setResolutionNotes((current) => ({ ...current, [ticket.id]: event.target.value }))} />
                     </label>
                     <div className="flex justify-end">
-                      <button type="button" disabled={resolvingId === ticket.id} onClick={() => void handleResolve(ticket.id)} className="btn btn-success w-full sm:w-auto">
+                      <button type="button" disabled={!isDemoMode || resolvingId === ticket.id} onClick={() => void handleResolve(ticket.id)} className="btn btn-success w-full sm:w-auto">
                         <Check className="h-4 w-4" />{resolvingId === ticket.id ? 'Resolving...' : 'Resolve ticket'}
                       </button>
                     </div>

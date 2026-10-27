@@ -5,6 +5,8 @@ import Card from '../../../components/common/Card';
 import PageHeader from '../../../components/common/PageHeader';
 import Alert from '../../../components/common/Alert';
 import EmptyState from '../../../components/common/EmptyState';
+import { Skeleton } from '../../../components/common/RequestState';
+import { canRetryError } from '../../../api/client';
 import { percentTone, scoreCriteria } from '../../../lib/scoring';
 import { useMyScorecards } from './useMyScorecards';
 
@@ -25,7 +27,7 @@ const scoreClasses = {
 };
 
 const MyScorecardsPage = () => {
-  const { scorecards: loadedScorecards, loading, error } = useMyScorecards();
+  const { scorecards: loadedScorecards, loading, error, refresh } = useMyScorecards();
   const scorecards = loadedScorecards.slice().sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate));
   const chartData = scorecards.slice().reverse().map((scorecard) => ({
     title: scorecard.title,
@@ -38,8 +40,9 @@ const MyScorecardsPage = () => {
       <PageHeader eyebrow="My learning progress" title="Scorecards" description="Review your submitted feedback and track your progress over time." />
 
       <Alert>{error?.message}</Alert>
+      {canRetryError(error) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refresh()}>Retry</button>}
       {loading ? (
-        <p role="status" className="surface surface-pad text-center text-sm text-slate-500">Loading your scorecards...</p>
+        <Skeleton label="Loading your scorecards" />
       ) : error ? null : scorecards.length === 0 ? (
         <EmptyState
           icon={Award}

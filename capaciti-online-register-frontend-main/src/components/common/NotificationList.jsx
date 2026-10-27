@@ -1,11 +1,6 @@
 import { Bell, Check } from 'lucide-react';
 import EmptyState from './EmptyState';
-
-const formatTimestamp = (value) => new Intl.DateTimeFormat('en-ZA', {
-  timeZone: 'Africa/Johannesburg',
-  dateStyle: 'medium',
-  timeStyle: 'short',
-}).format(new Date(value));
+import { formatSastDateTime } from '../../lib/time';
 
 const NotificationList = ({ notifications = [], onMarkRead }) => {
   if (!notifications.length) {
@@ -31,7 +26,7 @@ const NotificationList = ({ notifications = [], onMarkRead }) => {
             </div>
             <p className="mt-0.5 text-sm leading-relaxed text-slate-600">{item.message || item.description || ''}</p>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="font-mono text-[11px] text-slate-400">{formatTimestamp(item.timestamp)} · {item.type || 'Notice'}</p>
+              <p className="font-mono text-[11px] text-slate-400">{formatSastDateTime(item.timestamp)} · {item.type || 'Notice'}</p>
               {!item.read && onMarkRead && (
                 <button type="button" className="btn btn-secondary btn-sm" onClick={() => onMarkRead(item.id)}>
                   <Check className="h-3.5 w-3.5" />

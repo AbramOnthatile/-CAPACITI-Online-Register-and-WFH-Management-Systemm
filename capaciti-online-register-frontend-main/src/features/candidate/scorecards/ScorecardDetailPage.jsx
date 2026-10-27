@@ -1,11 +1,14 @@
 import { Link, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { ArrowLeft, Award } from 'lucide-react';
+import { useMyScorecardQuery } from '../../../api/hooks/scorecards';
+import { useAuth } from '../../../context/AuthContext';
 import Card from '../../../components/common/Card';
 import Alert from '../../../components/common/Alert';
 import PageHeader from '../../../components/common/PageHeader';
+import { Skeleton } from '../../../components/common/RequestState';
+import { ApiError, canRetryError } from '../../../api/client';
+import { formatSastDate } from '../../../lib/time';
 import { percentTone, scoreCriteria, scoreTone } from '../../../lib/scoring';
-import { useMyScorecards } from './useMyScorecards';
 
 const toneClasses = {
   success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
@@ -23,30 +26,19 @@ const feedbackSections = [
 
 const ScorecardDetailPage = () => {
   const { assessmentId } = useParams();
-  const { getScorecard } = useMyScorecards();
-  const [scorecard, setScorecard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-    getScorecard(assessmentId)
-      .then((result) => { if (active) setScorecard(result); })
-      .catch((caught) => { if (active) setError(caught instanceof Error ? caught : new Error('This scorecard could not be loaded.')); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [assessmentId, getScorecard]);
+  const { user } = useAuth();
+  const scorecardQuery = useMyScorecardQuery(user?.id, assessmentId);
+  const { data: scorecard, isLoading: loading, error } = scorecardQuery;
 
   if (loading) {
-    return <div className="page-narrow"><p role="status" className="surface surface-pad text-center text-sm text-slate-500">Loading scorecard...</p></div>;
+    return <div className="page-narrow"><Skeleton label="Loading scorecard" /></div>;
   }
   if (!scorecard) {
     return (
       <div className="page-narrow">
-        <Card title={error ? 'Scorecard could not be loaded' : 'Scorecard unavailable'}>
+        <Card title={error instanceof ApiError && error.status === 404 ? 'Scorecard not found' : error ? 'Scorecard could not be loaded' : 'Scorecard unavailable'}>
           <Alert tone={error ? 'error' : 'info'}>{error?.message || 'This scorecard is not available in your account.'}</Alert>
+          {canRetryError(error) && <button type="button" className="btn btn-secondary mt-4" onClick={() => void scorecardQuery.refetch()}>Retry</button>}
           <Link to="/candidate/scorecards" className="btn btn-secondary mt-4"><ArrowLeft className="h-4 w-4" />Back to my scorecards</Link>
         </Card>
       </div>
@@ -60,7 +52,7 @@ const ScorecardDetailPage = () => {
         backLabel="Back to my scorecards"
         eyebrow={scorecard.type === 'WEEKLY' ? 'Weekly assessment' : 'Project assessment'}
         title={scorecard.title}
-        description={`Assessment date · ${scorecard.assessmentDate}`}
+        description={`Assessment date · ${formatSastDate(scorecard.assessmentDate)}`}
       />
 
       <section className="surface surface-pad flex items-center gap-4">

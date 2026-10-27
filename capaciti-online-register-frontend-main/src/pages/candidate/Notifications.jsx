@@ -4,9 +4,11 @@ import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import { useApp } from '../../context/AppContext';
+import StatusBadge from '../../components/common/StatusBadge';
+import { WfhStatus } from '../../api/types';
 
 const Notifications = () => {
-  const { notifications, notificationsLoading, notificationsError, markNotificationRead } = useApp();
+  const { notifications, notificationsLoading, notificationsError, markNotificationRead, isDemoMode } = useApp();
   const [actionError, setActionError] = useState('');
   const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -21,7 +23,7 @@ const Notifications = () => {
 
   return (
     <div className="page-narrow">
-      <PageHeader eyebrow="Updates & alerts" title="Notifications" description={`${unreadCount} unread update${unreadCount === 1 ? '' : 's'}`} />
+      <PageHeader eyebrow="Updates & alerts" title="Notifications" description={`${unreadCount} unread update${unreadCount === 1 ? '' : 's'}`} actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>} />
 
       <Alert>{notificationsError?.message}</Alert>
       <Alert>{actionError}</Alert>
@@ -29,7 +31,7 @@ const Notifications = () => {
       <Card title="Activity & announcements">
         {notificationsLoading
           ? <p role="status" className="meta">Loading notifications...</p>
-          : <NotificationList notifications={notifications} onMarkRead={handleMarkRead} />}
+          : <NotificationList notifications={notifications} onMarkRead={isDemoMode ? handleMarkRead : undefined} />}
       </Card>
     </div>
   );

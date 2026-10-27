@@ -9,7 +9,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.CreateUserR
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserStatusRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UserDto;
-import za.ac.capaciti.capacitionlineregisterbackend.enums.Role;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.UserRole;
 
 public interface IUserService {
 
@@ -19,7 +19,7 @@ public interface IUserService {
 
     UserDto setActive(UUID id, UpdateUserStatusRequest request);
 
-    Page<UserDto> list(Role role, Boolean active, String text, Pageable pageable);
+    Page<UserDto> list(UserRole role, Boolean active, String text, Pageable pageable);
 
     UserDto getById(UUID id);
 

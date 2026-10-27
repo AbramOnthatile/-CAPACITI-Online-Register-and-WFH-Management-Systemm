@@ -6,9 +6,10 @@ import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
+import { WfhStatus } from '../../api/types';
 
 const ChampionCheckIns = () => {
-  const { checkinReviews, saveCheckinFeedback } = useApp();
+  const { checkinReviews, saveCheckinFeedback, isDemoMode } = useApp();
   const [drafts, setDrafts] = useState({});
   const [errors, setErrors] = useState({});
   const [savedId, setSavedId] = useState('');
@@ -30,7 +31,7 @@ const ChampionCheckIns = () => {
 
   return (
     <div className="page-narrow">
-      <PageHeader eyebrow="Candidate submissions" title="Check-in reviews" description="Candidate responses and coach feedback." />
+      <PageHeader eyebrow="Candidate submissions" title="Check-in reviews" description="Candidate responses and coach feedback." actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>} />
 
       {checkinReviews.length ? (
         <ul className="list">
@@ -55,7 +56,7 @@ const ChampionCheckIns = () => {
                 <Alert>{errors[entry.id]}</Alert>
                 {savedId === entry.id && <Alert tone="success">Feedback saved.</Alert>}
                 <div className="flex justify-end">
-                  <button type="button" onClick={() => submitFeedback(entry)} className="btn btn-primary w-full sm:w-auto"><Send className="h-4 w-4" />Send feedback</button>
+                  <button type="button" disabled={!isDemoMode} onClick={() => submitFeedback(entry)} className="btn btn-primary w-full sm:w-auto"><Send className="h-4 w-4" />Send feedback</button>
                 </div>
               </div>
             </li>

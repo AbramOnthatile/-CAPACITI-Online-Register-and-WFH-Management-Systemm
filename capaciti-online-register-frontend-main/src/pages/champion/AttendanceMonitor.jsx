@@ -9,27 +9,32 @@ import EmptyState from '../../components/common/EmptyState';
 import { ArrivalStatus, DepartureStatus } from '../../api/types';
 import { downloadCsv } from '../../lib/downloadCsv';
 import { getStatusMetadata } from '../../lib/status';
+import { useAttendanceApi } from '../../api/hooks';
+import { Skeleton, ErrorState } from '../../components/common/RequestState';
+import { formatSastDate, formatSastTime } from '../../lib/time';
+import { canRetryError } from '../../api/client';
 
 const filters = ['ALL', ...new Set([...Object.values(ArrivalStatus), ...Object.values(DepartureStatus)])];
 
-const formatTime = (value) => value
-  ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
-  : '—';
+const formatTime = (value) => formatSastTime(value);
 const breakTimes = (record, type) => (record.breaks ?? [])
   .filter((item) => item.type === type)
   .map((item) => `${formatTime(item.startedAt)}–${formatTime(item.endedAt)}`)
   .join('; ') || '—';
 
 const AttendanceMonitor = () => {
-  const { attendance, attendanceLoading, attendanceError } = useApp();
   const [status, setStatus] = useState('ALL');
+  const { data: attendance, loading: attendanceLoading, error: attendanceError, refresh } = useAttendanceApi(
+    undefined,
+    true,
+    { page: 0, size: 100, ...(status === 'ALL' ? {} : { status }) },
+  ).records;
   const [search, setSearch] = useState('');
 
   const rows = useMemo(() => attendance.filter((record) => {
     const nameMatch = !search || record.userName.toLowerCase().includes(search.toLowerCase());
-    const statusMatch = status === 'ALL' || record.arrivalStatus === status || record.departureStatus === status;
-    return nameMatch && statusMatch;
-  }), [attendance, status, search]);
+    return nameMatch;
+  }), [attendance, search]);
 
   const exportCsv = () => downloadCsv('daily-attendance-register.csv', rows.map((record) => ({
     candidate: record.userName,
@@ -68,7 +73,9 @@ const AttendanceMonitor = () => {
         </div>
       </div>
 
-      <Alert>{attendanceError?.message}</Alert>
+      <ErrorState message={attendanceError?.message} />
+      {canRetryError(attendanceError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refresh()}>Retry</button>}
+      {attendanceLoading && <Skeleton label="Loading attendance monitor" />}
 
       {/* Phones */}
       <ul className="list md:hidden">
@@ -78,7 +85,7 @@ const AttendanceMonitor = () => {
               <Avatar name={record.userName} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-navy">{record.userName}</p>
-                <p className="font-mono text-xs text-slate-400">{record.attendanceDate}</p>
+                <p className="font-mono text-xs text-slate-400">{formatSastDate(record.attendanceDate)}</p>
               </div>
               <p className="font-mono text-sm font-semibold text-navy">{formatTime(record.clockInAt)} → {formatTime(record.clockOutAt)}</p>
             </div>
@@ -88,7 +95,7 @@ const AttendanceMonitor = () => {
             </div>
           </li>
         ))}
-        {!rows.length && <li><EmptyState icon={Clock3} description={emptyMessage} /></li>}
+        {!attendanceLoading && !rows.length && <li><EmptyState icon={Clock3} description={emptyMessage} /></li>}
       </ul>
 
       {/* Tablet & desktop */}
@@ -107,7 +114,7 @@ const AttendanceMonitor = () => {
                       <p className="font-bold text-navy">{record.userName}</p>
                     </div>
                   </td>
-                  <td className="font-mono tabular-nums text-slate-600">{record.attendanceDate}</td>
+                  <td className="font-mono tabular-nums text-slate-600">{formatSastDate(record.attendanceDate)}</td>
                   <td><div className="flex flex-col items-start gap-1"><StatusBadge status={record.arrivalStatus} />{record.departureStatus && <StatusBadge status={record.departureStatus} />}</div></td>
                   <td className="font-mono font-semibold tabular-nums text-slate-700">{formatTime(record.clockInAt)}</td>
                   <td className="font-mono text-xs text-slate-600">{breakTimes(record, 'TEA')}</td>
@@ -115,7 +122,7 @@ const AttendanceMonitor = () => {
                   <td className="font-mono font-semibold tabular-nums text-slate-700">{formatTime(record.clockOutAt)}</td>
                 </tr>
               ))}
-              {!rows.length && <tr><td colSpan={7} className="table-empty">{emptyMessage}</td></tr>}
+              {!attendanceLoading && !rows.length && <tr><td colSpan={7} className="table-empty">{emptyMessage}</td></tr>}
             </tbody>
           </table>
         </div>

@@ -20,6 +20,10 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, UU
 
     Page<SupportTicket> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
 
+    long countByUserAndStatus(User user, TicketStatus status);
+
+    long countByUserAndTypeAndStatusAndProlongedTrue(User user, TicketType type, TicketStatus status);
+
     @Query("select t from SupportTicket t " +
             "where (:status is null or t.status = :status) " +
             "and (:type is null or t.type = :type) " +
