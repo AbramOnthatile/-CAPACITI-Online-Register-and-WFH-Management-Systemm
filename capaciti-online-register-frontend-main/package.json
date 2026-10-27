@@ -10,6 +10,7 @@
     "lint": "vite build"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.105.0",
     "axios": "^1.7.2",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",

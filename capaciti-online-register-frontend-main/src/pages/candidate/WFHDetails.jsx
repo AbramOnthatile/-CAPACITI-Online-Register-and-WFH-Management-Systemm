@@ -8,6 +8,9 @@ import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
 import { WfhStatus } from '../../api/types';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { formatSastDate, formatSastDateTime } from '../../lib/time';
+import { canRetryError } from '../../api/client';
 
 const readinessLabels = {
   stableInternet: 'Stable internet',
@@ -16,13 +19,11 @@ const readinessLabels = {
   laptopReady: 'Laptop ready',
 };
 
-const formatDateTime = (value) => value
-  ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
-  : '—';
+const formatDateTime = (value) => formatSastDateTime(value);
 
 const WFHDetails = () => {
   const { id } = useParams();
-  const { wfh, wfhLoading, wfhError, cancelWFHRequest } = useApp();
+  const { wfh, wfhLoading, wfhError, cancelWFHRequest, refreshWfh } = useApp();
   const [error, setError] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const request = wfh.find((item) => item.id === id);
@@ -39,8 +40,8 @@ const WFHDetails = () => {
     }
   };
 
-  if (wfhError) return <div className="page-narrow"><Alert>{wfhError.message}</Alert></div>;
-  if (wfhLoading) return <p role="status" className="meta">Loading WFH request...</p>;
+  if (wfhError) return <div className="page-narrow"><ErrorState message={wfhError.message} />{canRetryError(wfhError) && <button type="button" className="btn btn-secondary btn-sm mt-3" onClick={() => void refreshWfh()}>Retry</button>}</div>;
+  if (wfhLoading) return <div className="page-narrow"><Skeleton label="Loading WFH request" /></div>;
   if (!request) {
     return (
       <div className="page-narrow">
@@ -51,7 +52,7 @@ const WFHDetails = () => {
 
   return (
     <div className="page-narrow">
-      <PageHeader backTo="/candidate/wfh" backLabel="Back to WFH requests" eyebrow="WFH request" title={`${request.startDate} – ${request.endDate}`} description={<span className="font-mono text-xs">ID: {request.id}</span>} />
+      <PageHeader backTo="/candidate/wfh" backLabel="Back to WFH requests" eyebrow="WFH request" title={`${formatSastDate(request.startDate)} – ${formatSastDate(request.endDate)}`} description={<span className="font-mono text-xs">ID: {request.id}</span>} />
 
       <Alert>{error}</Alert>
 
@@ -59,7 +60,7 @@ const WFHDetails = () => {
         <div className="space-y-5">
           <div className="inset">
             <p className="label-caps flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Requested period</p>
-            <p className="mt-1 font-mono text-lg font-extrabold text-navy sm:text-xl">{request.startDate} – {request.endDate}</p>
+            <p className="mt-1 font-mono text-lg font-extrabold text-navy sm:text-xl">{formatSastDate(request.startDate)} – {formatSastDate(request.endDate)}</p>
           </div>
           <div>
             <p className="label-caps">Reason</p>

@@ -8,18 +8,22 @@ import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
+import { Skeleton } from '../../components/common/RequestState';
 import { getStatusMetadata } from '../../lib/status';
 import { countWfhDaysForWeek, getCurrentWeekStart, weeklyWfhLimit } from '../../lib/wfhPolicy';
+import { canRetryError } from '../../api/client';
+import { formatSastDate } from '../../lib/time';
 
 const filters = ['ALL', ...Object.values(WfhStatus)];
 
 const WFHRequests = () => {
-  const { wfh, wfhLoading, wfhError } = useApp();
+  const { wfh, wfhLoading, wfhError, refreshWfh, dashboard, dashboardError, refreshDashboard } = useApp();
   const { user } = useAuth();
   const [tab, setTab] = useState('ALL');
   const mine = useMemo(() => wfh.filter((item) => item.userId === user?.id), [wfh, user?.id]);
   const filtered = tab === 'ALL' ? mine : mine.filter((item) => item.status === tab);
-  const reservedDaysThisWeek = countWfhDaysForWeek(mine, getCurrentWeekStart());
+  const currentWeekStart = getCurrentWeekStart(dashboard?.serverTime);
+  const reservedDaysThisWeek = currentWeekStart ? countWfhDaysForWeek(mine, currentWeekStart) : 0;
   const remainingDays = Math.max(0, weeklyWfhLimit - reservedDaysThisWeek);
   const approved = mine.filter((item) => item.status === WfhStatus.APPROVED).length;
   const pending = mine.filter((item) => item.status === WfhStatus.PENDING).length;
@@ -36,7 +40,7 @@ const WFHRequests = () => {
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="label-caps">Weekly allowance</p>
-            <p className="mt-1 font-mono text-2xl font-extrabold text-navy">{remainingDays} day{remainingDays === 1 ? '' : 's'} left</p>
+            <p className="mt-1 font-mono text-2xl font-extrabold text-navy">{currentWeekStart ? `${remainingDays} day${remainingDays === 1 ? '' : 's'} left` : '—'}</p>
           </div>
           <p className="text-right text-xs text-slate-500">{reservedDaysThisWeek} of {weeklyWfhLimit} used</p>
         </div>
@@ -58,7 +62,10 @@ const WFHRequests = () => {
       </div>
 
       <Alert>{wfhError?.message}</Alert>
-      {wfhLoading ? <p className="meta">Loading requests...</p> : (
+      {canRetryError(wfhError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshWfh()}>Retry</button>}
+      {dashboardError && <Alert>{dashboardError.message}</Alert>}
+      {canRetryError(dashboardError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshDashboard()}>Retry</button>}
+      {wfhLoading ? <Skeleton label="Loading WFH requests" /> : (
         <ul className="list">
           {filtered.map((request) => (
             <li key={request.id}>
@@ -70,7 +77,7 @@ const WFHRequests = () => {
                     <StatusBadge status={request.status} />
                   </div>
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span className="flex items-center gap-1 font-mono"><Calendar className="h-3.5 w-3.5" />{request.startDate} – {request.endDate}</span>
+                    <span className="flex items-center gap-1 font-mono"><Calendar className="h-3.5 w-3.5" />{formatSastDate(request.startDate)} – {formatSastDate(request.endDate)}</span>
                     <span>{request.reviewedByName ? `Reviewed by ${request.reviewedByName}` : 'Not yet reviewed'}</span>
                   </p>
                 </div>

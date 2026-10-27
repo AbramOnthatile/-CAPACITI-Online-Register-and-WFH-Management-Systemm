@@ -6,12 +6,15 @@ import { useApp } from '../../context/AppContext';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
-import Alert from '../../components/common/Alert';
+import EmptyState from '../../components/common/EmptyState';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { formatSastDateTime } from '../../lib/time';
+import { canRetryError } from '../../api/client';
 
 const stages = [PromptStage.MORNING_KICKOFF, PromptStage.MIDDAY_PULSE, PromptStage.EOD_WRAP_UP];
 
 const CheckIns = () => {
-  const { prompts, activePrompts, promptsError, promptServerTime } = useApp();
+  const { prompts, activePrompts, promptsError, promptsLoading, promptServerTime, refreshPrompts } = useApp();
   const activePromptIds = new Set(activePrompts.map((prompt) => prompt.id));
 
   return (
@@ -23,10 +26,14 @@ const CheckIns = () => {
         {promptServerTime && <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400"><Clock3 className="h-3.5 w-3.5" />Server time: {formatServerTime(promptServerTime)}</p>}
       </header>
 
-      {promptsError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{promptsError.message}</p>}
+      <ErrorState message={promptsError?.message} />
+      {canRetryError(promptsError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshPrompts()}>Retry</button>}
+      {promptsLoading && <Skeleton label="Loading today's check-ins" />}
 
       <Card title="Today’s check-ins" subtitle="Your prompts are generated only for approved WFH weekdays.">
-        <div className="space-y-3">
+        {prompts.length === 0 && !promptsLoading ? (
+          <EmptyState title="No check-ins scheduled" description="No prompts are available for today." />
+        ) : <div className="space-y-3">
           {stages.map((stage) => {
             const prompt = prompts.find((item) => item.stage === stage);
             const isActive = prompt && activePromptIds.has(prompt.id);
@@ -64,18 +71,14 @@ const CheckIns = () => {
               </article>
             );
           })}
-        </div>
+        </div>}
       </Card>
     </div>
   );
 };
 
 function formatServerTime(value) {
-  return new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg',
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatSastDateTime(value);
 }
 
 export default CheckIns;

@@ -19,7 +19,7 @@ const Candidates = () => {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Candidate directory" title="Candidates" description={`${candidates.length} assigned candidate${candidates.length === 1 ? '' : 's'}`} />
+      <PageHeader eyebrow="Candidate directory" title="Candidates" description={`${candidates.length} assigned candidate${candidates.length === 1 ? '' : 's'}`} actions={<StatusBadge status="PENDING">Demo</StatusBadge>} />
 
       <Alert>{usersError?.message}</Alert>
 

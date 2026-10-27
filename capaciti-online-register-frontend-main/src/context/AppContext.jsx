@@ -11,11 +11,10 @@ import {
   useUsersApi,
   useWfhRequestsApi,
 } from '../api/hooks';
-import { mockCheckinReviews, mockNotifications } from '../mocks/entities';
+import { mockCheckinReviews, mockNotifications, mockTickets, mockUsers } from '../mocks/entities';
 import { readMockCollection, writeMockValue } from '../mocks/storage';
 import { useMocks } from '../api/mockMode';
 import { useAuth } from './AuthContext';
-import { apiClient } from '../api/client';
 
 const AppContext = createContext(null);
 
@@ -24,48 +23,24 @@ export const AppProvider = ({ children }) => {
   const isAdmin = user?.role === UserRole.ADMIN;
   const isCandidate = user?.role === UserRole.CANDIDATE;
   const isChampion = user?.role === UserRole.TECH_CHAMP;
-  const usersApi = useUsersApi(isAdmin || (useMocks && Boolean(user)));
-  const attendanceApi = useAttendanceApi(isCandidate ? user?.id : undefined, Boolean(user));
-  const wfhApi = useWfhRequestsApi(isCandidate ? user?.id : undefined, Boolean(user));
+  const canLoadAttendance = Boolean(user) && (isCandidate || isChampion || useMocks);
+  const canLoadRequests = Boolean(user) && (isCandidate || isChampion || useMocks);
+  const usersApi = useUsersApi(isAdmin || (useMocks && Boolean(user)), { page: 0, size: 100 });
+  const attendanceApi = useAttendanceApi(isCandidate ? user?.id : undefined, canLoadAttendance, { page: 0, size: 100 });
+  const wfhApi = useWfhRequestsApi(isCandidate ? user?.id : undefined, canLoadRequests, { page: 0, size: 100 });
   const promptsApi = usePromptsApi(isCandidate, user?.id);
-  const ticketsApi = useTicketsApi(isCandidate ? user?.id : undefined, Boolean(user));
-  const auditApi = useAuditApi(isAdmin);
-  const campusesApi = useCampusesApi();
+  const ticketsApi = useTicketsApi(isCandidate ? user?.id : undefined, canLoadRequests, { page: 0, size: 100 });
+  const auditApi = useAuditApi(isAdmin, { page: 0, size: 100 });
+  const campusesApi = useCampusesApi(isAdmin || useMocks);
   const dashboardApi = useDashboardApi(isCandidate ? UserRole.CANDIDATE : UserRole.TECH_CHAMP, isCandidate || isChampion);
   const reportsApi = useReportsApi(isAdmin || isChampion);
-  const [notificationRecords, setNotificationRecords] = useState(() => useMocks
-    ? readMockCollection('notifications', mockNotifications)
-    : []);
-  const [notificationsLoading, setNotificationsLoading] = useState(isCandidate && !useMocks);
+  const [notificationRecords, setNotificationRecords] = useState(() => readMockCollection('notifications', mockNotifications));
+  const [notificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState(null);
   const [checkinReviews, setCheckinReviews] = useState(() => readMockCollection('checkin-reviews', mockCheckinReviews));
   const notifications = isCandidate
     ? notificationRecords.filter((item) => !item.recipientId || item.recipientId === user.id)
     : [];
-
-  useEffect(() => {
-    if (!isCandidate || useMocks) {
-      setNotificationsLoading(false);
-      setNotificationsError(null);
-      return undefined;
-    }
-    let active = true;
-    setNotificationsLoading(true);
-    apiClient.get('/notifications/me')
-      .then((records) => {
-        if (active) {
-          setNotificationRecords(records);
-          setNotificationsError(null);
-        }
-      })
-      .catch((error) => {
-        if (active) setNotificationsError(error instanceof Error ? error : new Error('Notifications could not be loaded.'));
-      })
-      .finally(() => {
-        if (active) setNotificationsLoading(false);
-      });
-    return () => { active = false; };
-  }, [isCandidate, user?.id]);
 
   useEffect(() => {
     if (!useMocks) return undefined;
@@ -79,11 +54,7 @@ export const AppProvider = ({ children }) => {
 
   const markNotificationRead = useCallback(async (id) => {
     if (!isCandidate) throw new Error('Only candidates can update their notification status.');
-    if (!useMocks) {
-      const updatedNotification = await apiClient.patch(`/notifications/${id}/read`);
-      setNotificationRecords((current) => current.map((item) => item.id === id ? updatedNotification : item));
-      return;
-    }
+    if (!useMocks) throw new Error('Notifications are demo-only and cannot be changed in live mode.');
     const current = readMockCollection('notifications', mockNotifications);
     const notification = current.find((item) => item.id === id);
     if (!notification || (notification.recipientId && notification.recipientId !== user.id)) {
@@ -96,11 +67,8 @@ export const AppProvider = ({ children }) => {
 
   const createAnnouncement = useCallback(async ({ title, message }) => {
     if (!isChampion) throw new Error('Only Tech Champions can publish announcements.');
-    if (!useMocks) {
-      const response = await apiClient.post('/announcements', { title, message });
-      return response.recipientCount;
-    }
-    const candidates = usersApi.data.filter((candidate) => candidate.role === UserRole.CANDIDATE && candidate.active);
+    if (!useMocks) throw new Error('Announcements are demo-only and cannot be published in live mode.');
+    const candidates = mockUsers.filter((candidate) => candidate.role === UserRole.CANDIDATE && candidate.active);
     if (candidates.length === 0) throw new Error('There are no active candidates to receive this announcement.');
 
     const timestamp = new Date().toISOString();
@@ -118,9 +86,10 @@ export const AppProvider = ({ children }) => {
     writeMockValue('notifications', updated);
     setNotificationRecords(updated);
     return candidates.length;
-  }, [isChampion, usersApi.data]);
+  }, [isChampion]);
 
   const saveCheckinFeedback = useCallback((id, feedbackComment) => {
+    if (!useMocks) throw new Error('Check-in reviews are demo-only and cannot be updated in live mode.');
     const updated = checkinReviews.map((item) => item.id === id ? { ...item, feedbackComment } : item);
     if (!checkinReviews.some((item) => item.id === id)) throw new Error('The check-in review could not be found.');
     writeMockValue('checkin-reviews', updated);
@@ -128,9 +97,9 @@ export const AppProvider = ({ children }) => {
   }, [checkinReviews]);
 
   const value = useMemo(() => ({
-    users: usersApi.data,
-    usersLoading: usersApi.loading,
-    usersError: usersApi.error,
+    users: isChampion && !useMocks ? readMockCollection('users', mockUsers) : usersApi.data,
+    usersLoading: isChampion ? false : usersApi.loading,
+    usersError: isChampion ? null : usersApi.error,
     createUser: usersApi.create,
     updateUser: usersApi.update,
     setUserActive: usersApi.setActive,
@@ -138,6 +107,9 @@ export const AppProvider = ({ children }) => {
     attendanceToday: attendanceApi.today.data,
     attendanceLoading: attendanceApi.records.loading || attendanceApi.today.loading,
     attendanceError: attendanceApi.records.error || attendanceApi.today.error,
+    refreshAttendance: async () => {
+      await Promise.all([attendanceApi.records.refresh(), attendanceApi.today.refresh()]);
+    },
     clockIn: attendanceApi.clockIn,
     clockOut: attendanceApi.clockOut,
     startBreak: attendanceApi.startBreak,
@@ -145,6 +117,7 @@ export const AppProvider = ({ children }) => {
     wfh: wfhApi.data,
     wfhLoading: wfhApi.loading,
     wfhError: wfhApi.error,
+    refreshWfh: wfhApi.refresh,
     addWFHRequest: wfhApi.create,
     cancelWFHRequest: wfhApi.cancel,
     updateWFHRequest: wfhApi.decide,
@@ -152,22 +125,40 @@ export const AppProvider = ({ children }) => {
     promptServerTime: promptsApi.today.data.serverTime,
     activePrompts: promptsApi.active.data.prompts,
     activePromptServerTime: promptsApi.active.data.serverTime,
+    promptsLoading: promptsApi.today.loading || promptsApi.active.loading,
     submitPrompt: promptsApi.submit,
-    tickets: ticketsApi.data,
-    ticketsLoading: ticketsApi.loading,
-    ticketsError: ticketsApi.error,
+    refreshPrompts: promptsApi.refresh,
+    tickets: isAdmin && !useMocks ? readMockCollection('tickets', mockTickets) : ticketsApi.data,
+    ticketsLoading: isAdmin ? false : ticketsApi.loading,
+    ticketsError: isAdmin ? null : ticketsApi.error,
     createTicket: ticketsApi.create,
-    resolveTicket: ticketsApi.resolve,
+    resolveTicket: isAdmin && !useMocks
+      ? async () => { throw new Error('Ticket resolution is demo-only for administrator accounts.'); }
+      : ticketsApi.resolve,
     audit: auditApi.data,
     auditLoading: auditApi.loading,
     auditError: auditApi.error,
     campuses: campusesApi.data,
+    campusesLoading: campusesApi.isLoading,
     campusesError: campusesApi.error,
     dashboard: dashboardApi.data,
     dashboardLoading: dashboardApi.loading,
     dashboardError: dashboardApi.error,
     promptsError: promptsApi.today.error || promptsApi.active.error,
+    refreshDashboard: dashboardApi.refresh,
+    refreshReports: async () => {
+      await Promise.all([
+        reportsApi.overview.refresh(),
+        reportsApi.attendanceSummary.refresh(),
+        reportsApi.wfhSummary.refresh(),
+      ]);
+    },
+    refreshAudit: auditApi.refresh,
+    refreshUsers: usersApi.refresh,
+    refreshCampuses: campusesApi.refresh,
+    refreshTickets: ticketsApi.refresh,
     reports: reportsApi.overview.data,
+    reportsLoading: reportsApi.overview.isLoading || reportsApi.attendanceSummary.isLoading || reportsApi.wfhSummary.isLoading,
     attendanceSummary: reportsApi.attendanceSummary.data,
     wfhSummary: reportsApi.wfhSummary.data,
     reportsError: reportsApi.overview.error || reportsApi.attendanceSummary.error || reportsApi.wfhSummary.error,
@@ -179,7 +170,7 @@ export const AppProvider = ({ children }) => {
     checkinReviews,
     saveCheckinFeedback,
     isDemoMode: useMocks,
-  }), [usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi, notifications, notificationsLoading, notificationsError, checkinReviews, markNotificationRead, createAnnouncement, saveCheckinFeedback]);
+  }), [isAdmin, isChampion, usersApi, attendanceApi, wfhApi, promptsApi, ticketsApi, auditApi, campusesApi, dashboardApi, reportsApi, notifications, notificationsLoading, notificationsError, checkinReviews, markNotificationRead, createAnnouncement, saveCheckinFeedback]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

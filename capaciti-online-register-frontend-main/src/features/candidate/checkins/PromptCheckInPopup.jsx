@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3, X } from 'lucide-react';
 import { PromptStage } from '../../../api/types';
 import { useApp } from '../../../context/AppContext';
+import { createDraftKey } from '../../../lib/attendanceAction';
+import { ApiError, getUserErrorMessage } from '../../../api/client';
+import { canRetryError, getFieldError } from '../../../api/client';
 
 const stages = [
   PromptStage.MORNING_KICKOFF,
@@ -23,7 +26,7 @@ const qualityStatusLabel = (prompt) => prompt.stage === PromptStage.MORNING_KICK
     : 'A GitHub PR, commit hash, or deliverable link';
 
 const PromptCheckInPopup = () => {
-  const { activePrompts, activePromptServerTime, submitPrompt } = useApp();
+  const { activePrompts, activePromptServerTime, submitPrompt, refreshPrompts } = useApp();
   const [dismissedId, setDismissedId] = useState(null);
   const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
 
@@ -63,13 +66,14 @@ const PromptCheckInPopup = () => {
       serverTime={activePromptServerTime}
       elapsedSeconds={serverElapsedSeconds}
       onSubmit={submitPrompt}
+      onRefresh={refreshPrompts}
       onClose={() => setDismissedId(prompt.id)}
     />
   );
 };
 
-const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onClose }) => {
-  const durationSeconds = Math.max(1, Math.floor((Date.parse(prompt.expiresAt) - Date.parse(prompt.scheduledAt)) / 1000));
+const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onRefresh, onClose }) => {
+  const durationSeconds = Math.max(1, Math.floor((Date.parse(prompt.expiresAt) - Date.parse(serverTime)) / 1000));
   const remainingSeconds = Math.max(0, Math.floor((Date.parse(prompt.expiresAt) - Date.parse(serverTime)) / 1000) - elapsedSeconds);
   const progress = Math.min(1, remainingSeconds / durationSeconds);
   const [deliverables, setDeliverables] = useState(['', '']);
@@ -83,10 +87,16 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
   const [qualityMessage, setQualityMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
+  const draftKey = useRef(createDraftKey());
+  const inFlight = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [retryError, setRetryError] = useState(null);
 
   const submit = async (event) => {
     event.preventDefault();
+    if (inFlight.current) return;
     setError('');
+    setFieldErrors({});
     setQualityMessage('');
     const payload = prompt.stage === PromptStage.MORNING_KICKOFF
       ? {
@@ -101,6 +111,7 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
           blockerNote: blockerNote.trim() || undefined,
         }
         : { workLink: workLink.trim() || undefined };
+    payload.draftKey = draftKey.current;
 
     const nonBlankDeliverables = payload.deliverables ?? [];
     if (prompt.stage === PromptStage.MORNING_KICKOFF
@@ -119,11 +130,7 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
       setError('Enter an http(s) link or a 7 to 40 character hexadecimal commit hash.');
       return;
     }
-    if (remainingSeconds <= 0) {
-      setError('This check-in window has ended. Refreshing available prompts…');
-      return;
-    }
-
+    inFlight.current = true;
     setSaving(true);
     try {
       const result = await onSubmit(prompt.id, payload);
@@ -135,8 +142,12 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
         setQualityMessage(result.quality.feedbackMessage || 'Please revise your response and try again.');
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Check-in could not be submitted.');
+      setError(getUserErrorMessage(caught, 'Check-in could not be submitted.'));
+      setRetryError(caught);
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
+      if (caught instanceof ApiError && ['PROMPT_EXPIRED', 'PROMPT_ALREADY_SUBMITTED'].includes(caught.code)) await onRefresh();
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };
@@ -185,22 +196,24 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
                 ))}
                 {deliverables.length < 3 && <button type="button" onClick={() => setDeliverables((current) => [...current, ''])} className="text-[11px] font-bold text-[#6115D0] hover:underline">+ Add another deliverable</button>}
                 {deliverables.length > 2 && <button type="button" onClick={() => setDeliverables((current) => current.slice(0, 2))} className="ml-3 text-[11px] font-semibold text-slate-500 hover:underline">Remove third</button>}
+                {getFieldError(fieldErrors, 'deliverables') && <p role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'deliverables')}</p>}
               </div>
-              <SelectField label="Stand-up confirmed" value={standupConfirmed} onChange={setStandupConfirmed} options={[['true', 'Yes'], ['false', 'No']]} />
+              <SelectField label="Stand-up confirmed" value={standupConfirmed} onChange={setStandupConfirmed} options={[['true', 'Yes'], ['false', 'No']]} error={getFieldError(fieldErrors, 'standupConfirmed')} />
               <div className="grid gap-3 sm:grid-cols-2">
-                <SelectField label="Power status" value={powerStatus} onChange={setPowerStatus} options={statusOptions} />
-                <SelectField label="ISP status" value={ispStatus} onChange={setIspStatus} options={statusOptions} />
+                <SelectField label="Power status" value={powerStatus} onChange={setPowerStatus} options={statusOptions} error={getFieldError(fieldErrors, 'powerStatus')} />
+                <SelectField label="ISP status" value={ispStatus} onChange={setIspStatus} options={statusOptions} error={getFieldError(fieldErrors, 'ispStatus')} />
               </div>
             </>
           )}
 
           {prompt.stage === PromptStage.MIDDAY_PULSE && (
             <>
-              <SelectField label="Progress status" value={progressStatus} onChange={setProgressStatus} options={[['ON_TRACK', 'On track'], ['DELAYED', 'Delayed'], ['BLOCKED', 'Blocked']]} />
+              <SelectField label="Progress status" value={progressStatus} onChange={setProgressStatus} options={ [['ON_TRACK', 'On track'], ['DELAYED', 'Delayed'], ['BLOCKED', 'Blocked']]} error={getFieldError(fieldErrors, 'progressStatus')} />
               {['DELAYED', 'BLOCKED'].includes(progressStatus) && (
                 <label className="block text-xs font-bold text-slate-700">
                   Blocker note
                   <textarea maxLength={1000} rows={3} value={blockerNote} onChange={(event) => setBlockerNote(event.target.value)} className="input mt-1 text-xs" placeholder="Briefly describe what is blocking or delaying progress." />
+                  {getFieldError(fieldErrors, 'blockerNote') && <span role="alert" className="block text-rose-700">{getFieldError(fieldErrors, 'blockerNote')}</span>}
                 </label>
               )}
               {progressStatus === 'BLOCKED' && <p className="rounded-lg bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-500">Your blocker will be added to the passive support queue for review. No alert is sent.</p>}
@@ -211,14 +224,18 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
             <label className="block text-xs font-bold text-slate-700">
               PR, commit hash, or deliverable link
               <input maxLength={500} value={workLink} onChange={(event) => setWorkLink(event.target.value)} className="input mt-1 text-xs" placeholder="https://github.com/... or commit hash" />
+              {getFieldError(fieldErrors, 'workLink') && <span role="alert" className="mt-1 block text-rose-700">{getFieldError(fieldErrors, 'workLink')}</span>}
             </label>
           )}
 
           <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <Link to="/candidate/progress" onClick={onClose} className="text-center text-[11px] font-semibold text-slate-500 hover:text-[#6115D0]">View check-in history</Link>
-            <button type="submit" disabled={saving || remainingSeconds <= 0} className="rounded-xl bg-[#6115D0] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4F11AA] disabled:cursor-not-allowed disabled:opacity-50">
-              {saving ? 'Submitting…' : 'Submit check-in'}
-            </button>
+            <div className="flex justify-end gap-2">
+              {canRetryError(retryError) && <button type="button" disabled={saving} onClick={(event) => event.currentTarget.closest('form')?.requestSubmit()} className="btn btn-secondary btn-sm">Retry</button>}
+              <button type="submit" disabled={saving} className="rounded-xl bg-[#6115D0] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4F11AA] disabled:cursor-not-allowed disabled:opacity-50">
+                {saving ? 'Submitting…' : 'Submit check-in'}
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -228,13 +245,14 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onC
 
 const statusOptions = [['STABLE', 'Stable'], ['UNSTABLE', 'Unstable'], ['DOWN', 'Down']];
 
-const SelectField = ({ label, value, onChange, options }) => (
+const SelectField = ({ label, value, onChange, options, error }) => (
   <label className="block text-xs font-bold text-slate-700">
     {label}
     <select required value={value} onChange={(event) => onChange(event.target.value)} className="input mt-1 text-xs">
       <option value="" disabled>Select status</option>
       {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
     </select>
+    {error && <span role="alert" className="mt-1 block text-rose-700">{error}</span>}
   </label>
 );
 

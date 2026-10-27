@@ -28,6 +28,8 @@ public interface DailyPromptRepository extends JpaRepository<DailyPrompt, UUID> 
 
     List<DailyPrompt> findByUserAndPromptDateOrderByScheduledAtAsc(User user, LocalDate date);
 
+    List<DailyPrompt> findByPromptDate(LocalDate date);
+
     @Query("""
             SELECT p FROM DailyPrompt p
             WHERE p.user = :user

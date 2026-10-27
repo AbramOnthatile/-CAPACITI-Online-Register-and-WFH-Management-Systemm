@@ -15,7 +15,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UserDto;
 import za.ac.capaciti.capacitionlineregisterbackend.service.IAuthService;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final IAuthService authService;

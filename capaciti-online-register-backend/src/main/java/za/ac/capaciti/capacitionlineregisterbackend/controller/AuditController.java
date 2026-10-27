@@ -16,7 +16,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.audit.AuditLogDt
 import za.ac.capaciti.capacitionlineregisterbackend.service.IAuditService;
 
 @RestController
-@RequestMapping("/audit")
+@RequestMapping("/api/v1/audit")
 @PreAuthorize("hasRole('ADMIN')")
 public class AuditController {
 

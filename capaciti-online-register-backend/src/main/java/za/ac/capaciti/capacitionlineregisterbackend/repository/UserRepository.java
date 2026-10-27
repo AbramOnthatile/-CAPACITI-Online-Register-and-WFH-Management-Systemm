@@ -22,18 +22,18 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findByChampionAndRoleAndActive(User champion, String role, boolean active);
 
-        List<User> findByRole(Enum<?> role);
+    List<User> findByRole(String role);
 
     @Query("""
             SELECT u FROM User u
             WHERE (:role IS NULL OR u.role = :role)
               AND (:active IS NULL OR u.active = :active)
               AND (:text IS NULL
-                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :text, '%'))
                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :text, '%')))
             """)
     Page<User> searchUsers(
-            @Param("role") Enum<?> role,
+            @Param("role") String role,
             @Param("active") Boolean active,
             @Param("text") String text,
             Pageable pageable);

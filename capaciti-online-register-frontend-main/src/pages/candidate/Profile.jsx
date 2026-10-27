@@ -9,11 +9,13 @@ import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import { ActiveBadge } from '../../components/common/StatusBadge';
+import StatusBadge from '../../components/common/StatusBadge';
+import { WfhStatus } from '../../api/types';
 import { MapPin } from 'lucide-react';
 
 const Profile = () => {
   const { user, updateCurrentUser } = useAuth();
-  const { updateUser } = useApp();
+  const { isDemoMode } = useApp();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -30,8 +32,11 @@ const Profile = () => {
     event.preventDefault();
     if (!user) return;
     setError('');
+    if (!isDemoMode) {
+      setError('Profile editing is demo-only because the backend does not expose a candidate profile update.');
+      return;
+    }
     try {
-      await updateUser(user.id, { fullName: formData.fullName, email: formData.email });
       updateCurrentUser({ fullName: formData.fullName, email: formData.email });
       writeMockValue(`profile:${user.id}`, profileData);
       setSaved(true);
@@ -43,7 +48,7 @@ const Profile = () => {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Account" title="My profile" />
+      <PageHeader eyebrow="Account" title="My profile" actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>} />
 
       <Alert tone="success">{saved && 'Profile changes saved successfully.'}</Alert>
       <Alert>{error}</Alert>
@@ -71,19 +76,19 @@ const Profile = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="field">
                   <span className="field-label">Full name</span>
-                  <input type="text" required autoComplete="name" className="input" value={formData.fullName} onChange={(event) => setFormData({ ...formData, fullName: event.target.value })} />
+                  <input type="text" required autoComplete="name" className="input" value={formData.fullName} onChange={(event) => setFormData({ ...formData, fullName: event.target.value })} disabled={!isDemoMode} />
                 </label>
                 <label className="field">
                   <span className="field-label">Email address</span>
-                  <input type="email" required autoComplete="email" className="input" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} />
+                  <input type="email" required autoComplete="email" className="input" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} disabled={!isDemoMode} />
                 </label>
                 <label className="field">
                   <span className="field-label">Contact number</span>
-                  <input type="tel" autoComplete="tel" value={profileData.phone} onChange={(event) => setProfileData({ ...profileData, phone: event.target.value })} className="input" />
+                  <input type="tel" autoComplete="tel" value={profileData.phone} onChange={(event) => setProfileData({ ...profileData, phone: event.target.value })} className="input" disabled={!isDemoMode} />
                 </label>
                 <label className="field">
                   <span className="field-label">Emergency contact</span>
-                  <input type="text" value={profileData.emergencyContact} onChange={(event) => setProfileData({ ...profileData, emergencyContact: event.target.value })} className="input" />
+                  <input type="text" value={profileData.emergencyContact} onChange={(event) => setProfileData({ ...profileData, emergencyContact: event.target.value })} className="input" disabled={!isDemoMode} />
                 </label>
               </div>
 
@@ -91,12 +96,12 @@ const Profile = () => {
                 <span className="field-label">Home location</span>
                 <span className="relative block">
                   <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input type="text" value={profileData.location} onChange={(event) => setProfileData({ ...profileData, location: event.target.value })} className="input pl-10" />
+                  <input type="text" value={profileData.location} onChange={(event) => setProfileData({ ...profileData, location: event.target.value })} className="input pl-10" disabled={!isDemoMode} />
                 </span>
               </label>
 
               <div className="flex justify-end border-t border-slate-100 pt-4">
-                <button type="submit" className="btn btn-primary w-full sm:w-auto">Save changes</button>
+                <button type="submit" disabled={!isDemoMode} className="btn btn-primary w-full sm:w-auto">Save changes</button>
               </div>
             </form>
           </Card>

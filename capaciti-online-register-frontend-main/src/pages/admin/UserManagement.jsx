@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole, WorkMode } from '../../api/types';
 import { Search, UserPlus, Shield, Award, GraduationCap, Users } from 'lucide-react';
@@ -8,6 +8,8 @@ import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
 
 const blankUser = { fullName: '', email: '', role: UserRole.CANDIDATE, defaultMode: WorkMode.ON_SITE, campusId: '', championId: '' };
 const roles = Object.values(UserRole);
@@ -24,13 +26,17 @@ const RoleBadge = ({ role }) => {
 };
 
 const UserManagement = () => {
-  const { users, usersLoading, usersError, campuses, campusesError, createUser, setUserActive } = useApp();
+  const { users, usersLoading, usersError, campuses, campusesLoading, campusesError, createUser, setUserActive, refreshUsers, refreshCampuses } = useApp();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [addUserModal, setAddUserModal] = useState(false);
   const [form, setForm] = useState(blankUser);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState('');
+  const inFlight = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [retryError, setRetryError] = useState(null);
   const filteredUsers = useMemo(() => users.filter((user) => {
     const matchesSearch = !search || user.fullName.toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase());
     return matchesSearch && (roleFilter === 'ALL' || user.role === roleFilter);
@@ -38,38 +44,52 @@ const UserManagement = () => {
 
   const submitUser = async (event) => {
     event.preventDefault();
+    if (inFlight.current) return;
     if (!form.fullName.trim() || !form.email.trim()) {
       setError('Full name and email are required.');
       return;
     }
     setError('');
+    setFieldErrors({});
+    inFlight.current = true;
     setSaving(true);
     try {
+      const temporaryPassword = window.prompt(`Enter a temporary password for ${form.email.trim()}.`);
+      if (!temporaryPassword?.trim()) {
+        setError('A temporary password is required to create the account.');
+        return;
+      }
       await createUser({
         fullName: form.fullName.trim(),
         email: form.email.trim(),
+        temporaryPassword,
         role: form.role,
         defaultMode: form.defaultMode,
         campusId: form.campusId || null,
-        campusName: campuses.find((campus) => campus.id === form.campusId)?.name ?? null,
         championId: form.championId || null,
-        active: true,
       });
       setForm(blankUser);
       setAddUserModal(false);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'The user could not be created.');
+      setError(getUserErrorMessage(caught, 'The user could not be created.'));
+      setRetryError(caught);
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };
 
   const toggleActive = async (id, active) => {
+    if (updatingUserId === id) return;
     setError('');
+    setUpdatingUserId(id);
     try {
       await setUserActive(id, !active);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'The account status could not be updated.');
+    } finally {
+      setUpdatingUserId('');
     }
   };
 
@@ -100,7 +120,9 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {!addUserModal && <Alert>{error || usersError?.message || campusesError?.message}</Alert>}
+      {!addUserModal && <ErrorState message={error || usersError?.message || campusesError?.message} />}
+      {!addUserModal && (canRetryError(usersError) || canRetryError(campusesError)) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void Promise.all([refreshUsers(), refreshCampuses()])}>Retry</button>}
+      {(usersLoading || campusesLoading) && <Skeleton label="Loading users and campuses" />}
 
       {/* Phones */}
       <ul className="list md:hidden">
@@ -120,7 +142,7 @@ const UserManagement = () => {
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
               <span className="truncate text-xs text-slate-500">{user.campusName || 'No campus'}</span>
-              <button type="button" onClick={() => void toggleActive(user.id, user.active)} className="btn btn-secondary btn-sm">{user.active ? 'Deactivate' : 'Activate'}</button>
+              <button type="button" disabled={updatingUserId === user.id} onClick={() => void toggleActive(user.id, user.active)} className="btn btn-secondary btn-sm">{updatingUserId === user.id ? 'Saving...' : user.active ? 'Deactivate' : 'Activate'}</button>
             </div>
           </li>
         ))}
@@ -147,7 +169,7 @@ const UserManagement = () => {
                   <td className="text-slate-600">{user.campusName || '—'}</td>
                   <td><StatusBadge status={user.defaultMode} /></td>
                   <td><ActiveBadge active={user.active} /></td>
-                  <td className="text-right"><button type="button" onClick={() => void toggleActive(user.id, user.active)} className="btn btn-secondary btn-sm">{user.active ? 'Deactivate' : 'Activate'}</button></td>
+                  <td className="text-right"><button type="button" disabled={updatingUserId === user.id} onClick={() => void toggleActive(user.id, user.active)} className="btn btn-secondary btn-sm">{updatingUserId === user.id ? 'Saving...' : user.active ? 'Deactivate' : 'Activate'}</button></td>
                 </tr>
               ))}
               {!filteredUsers.length && <tr><td colSpan={6} className="table-empty">{emptyMessage}</td></tr>}
@@ -172,15 +194,16 @@ const UserManagement = () => {
           )}
         >
           <div className="space-y-4">
-            <label className="field"><span className="field-label">Full name</span><input required type="text" value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="input" /></label>
-            <label className="field"><span className="field-label">Email</span><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} className="input" /></label>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="field"><span className="field-label">Role</span><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="input">{roles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select></label>
-              <label className="field"><span className="field-label">Default work mode</span><select value={form.defaultMode} onChange={(event) => setForm({ ...form, defaultMode: event.target.value })} className="input">{Object.values(WorkMode).map((mode) => <option key={mode} value={mode}>{mode === WorkMode.ON_SITE ? 'On-site' : 'Work from home'}</option>)}</select></label>
-            </div>
-            <label className="field"><span className="field-label">Campus</span><select value={form.campusId} onChange={(event) => setForm({ ...form, campusId: event.target.value })} className="input"><option value="">No campus assigned</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label>
-            <label className="field"><span className="field-label">Champion ID <span className="font-normal text-slate-400">(optional)</span></span><input type="text" value={form.championId} onChange={(event) => setForm({ ...form, championId: event.target.value })} className="input" /></label>
             <Alert>{error}</Alert>
+            {canRetryError(retryError) && <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => void submitUser({ preventDefault: () => {} })}>Retry</button>}
+            <label className="field"><span className="field-label">Full name</span><input required type="text" value={form.fullName} onChange={(event) => { setFieldErrors({}); setForm({ ...form, fullName: event.target.value }); }} className="input" />{getFieldError(fieldErrors, 'fullName') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'fullName')}</span>}</label>
+            <label className="field"><span className="field-label">Email</span><input required type="email" value={form.email} onChange={(event) => { setFieldErrors({}); setForm({ ...form, email: event.target.value }); }} className="input" />{getFieldError(fieldErrors, 'email') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'email')}</span>}</label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="field"><span className="field-label">Role</span><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} className="input">{roles.map((role) => <option key={role} value={role}>{roleLabel(role)}</option>)}</select>{getFieldError(fieldErrors, 'role') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'role')}</span>}</label>
+              <label className="field"><span className="field-label">Default work mode</span><select value={form.defaultMode} onChange={(event) => setForm({ ...form, defaultMode: event.target.value })} className="input">{Object.values(WorkMode).map((mode) => <option key={mode} value={mode}>{mode === WorkMode.ON_SITE ? 'On-site' : 'Work from home'}</option>)}</select>{getFieldError(fieldErrors, 'defaultMode') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'defaultMode')}</span>}</label>
+            </div>
+            <label className="field"><span className="field-label">Campus</span><select value={form.campusId} onChange={(event) => setForm({ ...form, campusId: event.target.value })} className="input"><option value="">No campus assigned</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select>{getFieldError(fieldErrors, 'campusId') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'campusId')}</span>}</label>
+            <label className="field"><span className="field-label">Champion ID <span className="font-normal text-slate-400">(optional)</span></span><input type="text" value={form.championId} onChange={(event) => setForm({ ...form, championId: event.target.value })} className="input" />{getFieldError(fieldErrors, 'championId') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'championId')}</span>}</label>
           </div>
         </Modal>
       )}

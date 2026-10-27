@@ -57,7 +57,7 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     @Query("""
             SELECT u FROM User u
-            WHERE u.role = za.ac.capaciti.capacitionlineregisterbackend.enums.Role.CANDIDATE
+            WHERE u.role = 'CANDIDATE'
               AND u.active = true
               AND NOT EXISTS (
                   SELECT a.id FROM AttendanceRecord a
