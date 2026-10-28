@@ -56,6 +56,8 @@ public class AttendanceService implements IAttendanceService {
     private final AttendanceMapper attendanceMapper;
     private final AuditService auditService;
     private final NotificationRepository notificationRepository;
+    private final IPromptGeneratorService promptGeneratorService;
+    private final IPromptService promptService;
 
     public AttendanceService(
             AttendanceRecordRepository attendanceRecordRepository,
@@ -67,7 +69,9 @@ public class AttendanceService implements IAttendanceService {
             IQualityGateService qualityGateService,
             AttendanceMapper attendanceMapper,
             AuditService auditService,
-            NotificationRepository notificationRepository) {
+            NotificationRepository notificationRepository,
+            IPromptGeneratorService promptGeneratorService,
+            IPromptService promptService) {
         this.attendanceRecordRepository = attendanceRecordRepository;
         this.userRepository = userRepository;
         this.wfhRequestRepository = wfhRequestRepository;
@@ -78,6 +82,8 @@ public class AttendanceService implements IAttendanceService {
         this.attendanceMapper = attendanceMapper;
         this.auditService = auditService;
         this.notificationRepository = notificationRepository;
+        this.promptGeneratorService = promptGeneratorService;
+        this.promptService = promptService;
     }
 
     @Override
@@ -167,6 +173,8 @@ public class AttendanceService implements IAttendanceService {
         details.put("ipVerified", ipVerified);
         details.put("geoVerified", geoVerified);
         auditService.log(user, "CLOCK_IN", "AttendanceRecord", saved.getId().toString(), details);
+        // The morning task form opens straight after clock-in.
+        promptGeneratorService.generateOnClockIn(saved);
         return new AttendanceActionResponse(attendanceMapper.toDto(saved), false, quality);
     }
 
@@ -214,6 +222,7 @@ public class AttendanceService implements IAttendanceService {
             record.setDeliverableLink(request.deliverableLink().trim());
         }
         AttendanceRecord saved = attendanceRecordRepository.save(record);
+        promptService.closeForClockOut(user, today);
         auditService.log(user, "CLOCK_OUT", "AttendanceRecord", saved.getId().toString(),
                 Map.of("departureStatus", departureStatus.name()));
         return new AttendanceActionResponse(attendanceMapper.toDto(saved), false, quality);

@@ -4,6 +4,7 @@ import { Clock, CheckCircle2, Building2, Home, ArrowRight, Send, ChevronRight, L
 import { PromptStage, PromptStatus, WfhStatus, WorkMode } from '../../api/types';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
+import { useCheckInGate } from '../../features/candidate/checkins/CheckInGate';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
@@ -24,6 +25,11 @@ const formatClock = (value) => (value
 const CandidateDashboard = () => {
   const { user } = useAuth();
   const { dashboard, dashboardLoading, dashboardError, attendanceLoading, wfh, wfhLoading, wfhError, prompts, activePrompts, promptsError, clockIn, clockOut, refreshDashboard, refreshWfh, refreshPrompts } = useApp();
+  const { requestEod } = useCheckInGate();
+  // The end-of-day form comes first; cancelling it keeps the candidate clocked in.
+  const startClockOut = async () => {
+    if (await requestEod('clock-out') !== 'cancelled') setAction('clock-out');
+  };
   const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
   const [action, setAction] = useState('');
   const [actionError, setActionError] = useState('');
@@ -124,13 +130,14 @@ const CandidateDashboard = () => {
             setActionError('Enter the reason requested by the server.');
             return;
           }
-          request = { ...request, earlyClockoutReason: actionReason.trim() };
+          // The server keeps whichever one applies: an early-departure reason or a late clock-out note.
+          request = { ...request, earlyClockoutReason: actionReason.trim(), lateClockoutNote: actionReason.trim() };
           setActionRequest(request);
         }
         result = await clockOut(request);
       }
 
-      if ((result?.quality?.accepted === false || result?.requiresReason) && result.quality.feedbackMessage) {
+      if ((result?.quality?.accepted === false || result?.requiresReason) && result.quality?.feedbackMessage) {
         setActionQuality(result.quality.feedbackMessage);
       }
       if (result?.requiresReason) {
@@ -238,7 +245,7 @@ const CandidateDashboard = () => {
                 action="clock-out"
                 icon={Clock}
                 pending={saving}
-                onClick={() => setAction('clock-out')}
+                onClick={() => void startClockOut()}
                 className="btn btn-dark btn-lg btn-block"
               />
             )}

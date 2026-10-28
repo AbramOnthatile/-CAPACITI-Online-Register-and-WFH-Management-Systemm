@@ -8,6 +8,7 @@ import { formatSastDate } from '../lib/time';
 import BrandLogo from '../components/common/BrandLogo';
 import Avatar from '../components/common/Avatar';
 import SignOutDialog from '../components/common/SignOutDialog';
+import { useCheckInGate } from '../features/candidate/checkins/CheckInGate';
 
 const accents = {
   primary: 'bg-primary-600 text-white shadow-sm shadow-primary-600/20',
@@ -60,6 +61,7 @@ const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace,
   const { notifications } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const { requestEod } = useCheckInGate();
   const { title } = getPageInfo(location.pathname);
   const roleBadge = roleBadges[user?.role] ?? roleBadges[UserRole.ADMIN];
   const RoleIcon = roleBadge.icon;
@@ -87,6 +89,13 @@ const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace,
     setConfirmSignOut(false);
     logout();
     navigate('/login');
+  };
+
+  // Candidates still clocked in see the end-of-day form first; it replaces the sign-out confirmation.
+  const startSignOut = async () => {
+    const outcome = await requestEod('sign-out');
+    if (outcome === 'none') setConfirmSignOut(true);
+    else if (outcome !== 'cancelled') handleLogout();
   };
 
   return (
@@ -166,7 +175,7 @@ const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace,
             )}
             <button
               type="button"
-              onClick={() => setConfirmSignOut(true)}
+              onClick={() => void startSignOut()}
               className="btn btn-ghost btn-sm h-9 w-9 shrink-0 p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
               title="Sign out"
               aria-label="Sign out"

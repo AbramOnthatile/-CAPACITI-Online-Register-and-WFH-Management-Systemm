@@ -238,15 +238,20 @@ export interface PromptCollection {
   prompts: DailyPrompt[];
 }
 
+export interface PromptTask {
+  title: string;
+  status?: 'DONE' | 'ON_TRACK' | 'DELAYED' | 'BLOCKED';
+}
+
+// Morning: tasks (titles) plus WFH readiness; midday and end of day: every task with a status.
 export interface PromptSubmission {
   draftKey: string;
-  deliverables: string[] | null;
-  standupConfirmed: boolean | null;
-  powerStatus: string | null;
-  ispStatus: string | null;
-  progressStatus: string | null;
-  blockerNote: string | null;
-  workLink: string | null;
+  tasks: PromptTask[];
+  standupConfirmed?: boolean;
+  powerStatus?: string;
+  ispStatus?: string;
+  blockerNote?: string;
+  note?: string;
 }
 
 export interface QualityResult {

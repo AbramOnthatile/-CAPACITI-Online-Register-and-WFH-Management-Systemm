@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import Avatar from '../../components/common/Avatar';
 import SignOutDialog from '../../components/common/SignOutDialog';
+import { useCheckInGate } from './checkins/CheckInGate';
 
 const groups = [
   {
@@ -28,12 +29,19 @@ const MorePage = () => {
   const { notifications } = useApp();
   const navigate = useNavigate();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const { requestEod } = useCheckInGate();
   const unread = notifications.filter((item) => !item.read).length;
 
   const handleSignOut = () => {
     setConfirmSignOut(false);
     logout();
     navigate('/login');
+  };
+
+  const startSignOut = async () => {
+    const outcome = await requestEod('sign-out');
+    if (outcome === 'none') setConfirmSignOut(true);
+    else if (outcome !== 'cancelled') handleSignOut();
   };
 
   return (
@@ -69,7 +77,7 @@ const MorePage = () => {
         </section>
       ))}
 
-      <button type="button" onClick={() => setConfirmSignOut(true)} className="btn btn-danger btn-block">
+      <button type="button" onClick={() => void startSignOut()} className="btn btn-danger btn-block">
         <LogOut className="h-4 w-4" />Sign out
       </button>
 

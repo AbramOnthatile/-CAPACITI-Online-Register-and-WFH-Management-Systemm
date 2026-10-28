@@ -12,8 +12,7 @@ import { ErrorState, Skeleton } from '../../components/common/RequestState';
 import { PromptStatus, WfhStatus } from '../../api/types';
 
 import { formatSastDateTime, getSastToday } from '../../lib/time';
-
-const labelFor = (key) => key.replace(/[A-Z]/g, (letter) => ` ${letter}`).replaceAll('_', ' ');
+import CheckInResponse from '../../features/candidate/checkins/CheckInResponse';
 
 // Live data: what each assigned candidate submitted for the selected day.
 const LiveCheckIns = () => {
@@ -26,7 +25,7 @@ const LiveCheckIns = () => {
       <PageHeader
         eyebrow="Candidate submissions"
         title="Check-in reviews"
-        description="Responses your candidates submitted for their WFH check-ins."
+        description="Tasks and progress your candidates submitted in their daily check-ins."
         actions={(
           <label className="flex items-center gap-2">
             <span className="sr-only">Day</span>
@@ -66,21 +65,14 @@ const LiveCheckIns = () => {
                       </p>
                     )}
                     {entry.response && Object.keys(entry.response).length ? (
-                      <dl className="space-y-1.5">
-                        {Object.entries(entry.response).map(([key, value]) => (
-                          <div key={key} className="grid grid-cols-[minmax(7rem,auto)_1fr] gap-2 text-xs">
-                            <dt className="font-semibold capitalize text-slate-500">{labelFor(key)}</dt>
-                            <dd className="whitespace-pre-wrap break-words text-slate-700">{Array.isArray(value) ? value.join(', ') : String(value)}</dd>
-                          </div>
-                        ))}
-                      </dl>
+                      <CheckInResponse response={entry.response} />
                     ) : <p className="text-xs text-slate-400">No response yet.</p>}
                   </div>
                 </li>
               ))}
             </ul>
           </>
-        ) : <EmptyState icon={MessageSquare} title="No check-ins for this day" description="Check-ins are created for candidates with approved WFH on weekdays." className="bg-white" />
+        ) : <EmptyState icon={MessageSquare} title="No check-ins for this day" description="Check-ins are created when your candidates clock in." className="bg-white" />
       )}
     </div>
   );

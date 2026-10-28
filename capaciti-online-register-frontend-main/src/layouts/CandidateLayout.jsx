@@ -10,6 +10,7 @@ import {
   Menu,
 } from 'lucide-react';
 import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
+import { CheckInGateProvider } from '../features/candidate/checkins/CheckInGate';
 import AppShell from './AppShell';
 
 const navItems = [
@@ -53,7 +54,7 @@ const getPageInfo = (path) => {
 };
 
 export const CandidateLayout = () => (
-  <>
+  <CheckInGateProvider>
     <AppShell
       navItems={navItems}
       homePath="/candidate/dashboard"
@@ -63,7 +64,7 @@ export const CandidateLayout = () => (
       mobileTabs={mobileTabs}
     />
     <PromptCheckInPopup />
-  </>
+  </CheckInGateProvider>
 );
 
 export default CandidateLayout;

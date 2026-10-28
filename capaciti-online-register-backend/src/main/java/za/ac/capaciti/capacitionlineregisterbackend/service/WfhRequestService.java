@@ -38,20 +38,17 @@ public class WfhRequestService implements IWfhRequestService {
     private final WfhRequestMapper wfhRequestMapper;
     private final IQualityGateService qualityGateService;
     private final AuditService auditService;
-    private final IPromptGeneratorService promptGeneratorService;
 
     public WfhRequestService(WfhRequestRepository wfhRequestRepository,
                             UserRepository userRepository,
                             WfhRequestMapper wfhRequestMapper,
                             IQualityGateService qualityGateService,
-                            AuditService auditService,
-                            IPromptGeneratorService promptGeneratorService) {
+                            AuditService auditService) {
         this.wfhRequestRepository = wfhRequestRepository;
         this.userRepository = userRepository;
         this.wfhRequestMapper = wfhRequestMapper;
         this.qualityGateService = qualityGateService;
         this.auditService = auditService;
-        this.promptGeneratorService = promptGeneratorService;
     }
 
     @Override
@@ -140,12 +137,6 @@ public class WfhRequestService implements IWfhRequestService {
         entity.setReviewedAt(Instant.now());
         entity.setReviewComment(request.comment());
         WfhRequest saved = wfhRequestRepository.save(entity);
-
-        // The 08:30 job has already run when a same-day request is approved later; create today's check-ins now.
-        LocalDate today = TimeUtil.today();
-        if (approved && !today.isBefore(saved.getStartDate()) && !today.isAfter(saved.getEndDate())) {
-            promptGeneratorService.generateForUser(saved.getUser(), today);
-        }
 
         String event = approved ? "WFH_APPROVED" : "WFH_REJECTED";
         auditService.log(event, saved.getId(), "WfhRequest", Map.of(

@@ -7,21 +7,25 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.AttendanceRecord;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.DailyPrompt;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.WfhRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.PromptStage;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.PromptStatus;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.AttendanceRecordRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.DailyPromptRepository;
-import za.ac.capaciti.capacitionlineregisterbackend.repository.WfhRequestRepository;
+import za.ac.capaciti.capacitionlineregisterbackend.util.TimeUtil;
 
 @ExtendWith(MockitoExtension.class)
 class PromptGeneratorServiceTest {
@@ -30,50 +34,62 @@ class PromptGeneratorServiceTest {
     private DailyPromptRepository dailyPromptRepository;
 
     @Mock
-    private WfhRequestRepository wfhRequestRepository;
-
-    @Mock
     private AttendanceRecordRepository attendanceRecordRepository;
 
-    @Test
-    void generatesThreeUniquePromptsForAnApprovedWfhCandidate() {
-        LocalDate date = LocalDate.of(2030, 1, 7); // a future Monday, so no window has expired yet
-        User candidate = new User();
-        candidate.setRole("CANDIDATE");
-        WfhRequest approvedRequest = new WfhRequest();
-        approvedRequest.setUser(candidate);
-        EnumSet<PromptStage> savedStages = EnumSet.noneOf(PromptStage.class);
-        when(wfhRequestRepository.findApprovedCovering(date)).thenReturn(List.of(approvedRequest));
-        when(dailyPromptRepository.existsByUserAndPromptDateAndStage(eq(candidate), eq(date), any()))
-                .thenAnswer(invocation -> savedStages.contains(invocation.getArgument(2)));
-        when(attendanceRecordRepository.findByUserAndAttendanceDate(candidate, date)).thenReturn(Optional.empty());
-        when(dailyPromptRepository.save(any(DailyPrompt.class))).thenAnswer(invocation -> {
-            DailyPrompt prompt = invocation.getArgument(0);
-            savedStages.add(prompt.getStage());
-            return prompt;
-        });
-        PromptGeneratorService service = new PromptGeneratorService(
-                dailyPromptRepository,
-                new PromptWindowCalculator(),
-                wfhRequestRepository,
-                attendanceRecordRepository);
+    private PromptGeneratorService service() {
+        return new PromptGeneratorService(dailyPromptRepository, new PromptWindowCalculator(), attendanceRecordRepository);
+    }
 
-        assertEquals(3, service.generateForDate(date));
-        assertEquals(0, service.generateForDate(date));
-        assertEquals(EnumSet.allOf(PromptStage.class), savedStages);
+    private AttendanceRecord clockedIn(User user, LocalDate date, Instant clockIn) {
+        return AttendanceRecord.builder().user(user).attendanceDate(date).clockInAt(clockIn).build();
+    }
+
+    private User user(String role) {
+        User user = new User();
+        user.setRole(role);
+        user.setActive(true);
+        return user;
     }
 
     @Test
-    void doesNotGeneratePromptsOnWeekends() {
-        LocalDate saturday = LocalDate.of(2026, 10, 31);
-        PromptGeneratorService service = new PromptGeneratorService(
-                dailyPromptRepository,
-                new PromptWindowCalculator(),
-                wfhRequestRepository,
-                attendanceRecordRepository);
+    void clockingInCreatesTheThreeCheckInsOnceWithTheMorningOneOpen() {
+        LocalDate date = LocalDate.of(2030, 1, 7); // future, so midday has not opened yet
+        User candidate = user("CANDIDATE");
+        Map<PromptStage, DailyPrompt> saved = new EnumMap<>(PromptStage.class);
+        when(dailyPromptRepository.existsByUserAndPromptDateAndStage(eq(candidate), eq(date), any()))
+                .thenAnswer(invocation -> saved.containsKey(invocation.getArgument(2)));
+        when(dailyPromptRepository.save(any(DailyPrompt.class))).thenAnswer(invocation -> {
+            DailyPrompt prompt = invocation.getArgument(0);
+            saved.put(prompt.getStage(), prompt);
+            return prompt;
+        });
+        AttendanceRecord attendance = clockedIn(candidate, date, TimeUtil.now().toInstant());
 
-        assertEquals(0, service.generateForDate(saturday));
-        verify(wfhRequestRepository, never()).findApprovedCovering(saturday);
+        assertEquals(3, service().generateOnClockIn(attendance));
+        assertEquals(0, service().generateOnClockIn(attendance));
+        assertEquals(EnumSet.allOf(PromptStage.class), saved.keySet());
+        assertEquals(PromptStatus.ACTIVE, saved.get(PromptStage.MORNING_KICKOFF).getStatus());
+        assertEquals(PromptStatus.ACTIVE, saved.get(PromptStage.EOD_WRAP_UP).getStatus());
+        assertEquals(PromptStatus.SCHEDULED, saved.get(PromptStage.MIDDAY_PULSE).getStatus());
+        assertEquals(TimeUtil.toInstant(date, LocalTime.of(13, 30)), saved.get(PromptStage.MIDDAY_PULSE).getScheduledAt());
+    }
+
+    @Test
+    void nonCandidatesGetNoCheckIns() {
+        AttendanceRecord attendance = clockedIn(user("TECH_CHAMP"), LocalDate.of(2030, 1, 7), Instant.now());
+
+        assertEquals(0, service().generateOnClockIn(attendance));
         verify(dailyPromptRepository, never()).save(any(DailyPrompt.class));
+    }
+
+    @Test
+    void catchUpCoversCandidatesAlreadyClockedIn() {
+        LocalDate date = LocalDate.of(2030, 1, 7);
+        User candidate = user("CANDIDATE");
+        when(attendanceRecordRepository.findByAttendanceDateAndClockInAtIsNotNullAndClockOutAtIsNull(date))
+                .thenReturn(List.of(clockedIn(candidate, date, Instant.now())));
+        when(dailyPromptRepository.save(any(DailyPrompt.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertEquals(3, service().generateForClockedIn(date));
     }
 }

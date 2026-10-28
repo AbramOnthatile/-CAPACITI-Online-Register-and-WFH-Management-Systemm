@@ -2,11 +2,11 @@ package za.ac.capaciti.capacitionlineregisterbackend.service;
 
 import java.time.LocalDate;
 
-import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.AttendanceRecord;
 
 public interface IPromptGeneratorService {
 
-    int generateForDate(LocalDate date);
+    int generateOnClockIn(AttendanceRecord attendance);
 
-    int generateForUser(User user, LocalDate date);
+    int generateForClockedIn(LocalDate date);
 }

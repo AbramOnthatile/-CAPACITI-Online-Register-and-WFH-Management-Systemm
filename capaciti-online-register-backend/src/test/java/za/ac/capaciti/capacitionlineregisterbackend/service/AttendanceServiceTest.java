@@ -56,6 +56,8 @@ class AttendanceServiceTest {
     @Mock private AuditService auditService;
     @Mock private NotificationRepository notificationRepository;
     @Mock private HttpServletRequest http;
+    @Mock private IPromptGeneratorService promptGeneratorService;
+    @Mock private IPromptService promptService;
 
     private AttendanceService service;
     private User user;
@@ -66,7 +68,7 @@ class AttendanceServiceTest {
         service = new AttendanceService(
                 attendanceRecordRepository, userRepository, wfhRequestRepository, statusEngine,
                 new IpWhitelistService(""), new LocationVerificationService(), qualityGateService,
-                new AttendanceMapper(), auditService, notificationRepository);
+                new AttendanceMapper(), auditService, notificationRepository, promptGeneratorService, promptService);
         campus = CampusHub.builder().name("Campus").latitude(-33.9249).longitude(18.4241).radiusM(300)
                 .whitelistedCidrs(List.of("196.0.0.0/24")).build();
         user = new User();
@@ -112,6 +114,7 @@ class AttendanceServiceTest {
         assertFalse(response.attendance().ipVerified());
         assertTrue(response.attendance().geoVerified());
         assertTrue(response.attendance().distanceM() < 300);
+        verify(promptGeneratorService).generateOnClockIn(any(AttendanceRecord.class));
     }
 
     @Test
