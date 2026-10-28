@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import za.ac.capaciti.capacitionlineregisterbackend.util.TimeUtil;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.QualityContext;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.WfhRequest;
@@ -54,6 +56,9 @@ class WfhRequestServiceTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private IPromptGeneratorService promptGeneratorService;
 
     @InjectMocks
     private WfhRequestService service;
@@ -164,5 +169,23 @@ class WfhRequestServiceTest {
         WfhRequestDto result = service.decide(id, new WfhDecisionRequest(true, "ok"), "manager@test.com");
         assertEquals(WfhStatus.APPROVED, result.status());
         verify(auditService).log(eq("WFH_APPROVED"), eq(id), eq("WfhRequest"), any(Map.class));
+        verify(promptGeneratorService, never()).generateForUser(any(), any());
+    }
+
+    @Test
+    void approvingARequestThatCoversTodayCreatesTodaysCheckIns() {
+        UUID id = UUID.randomUUID();
+        User reviewer = new User();
+        reviewer.setEmail("manager@test.com");
+        when(userRepository.findByEmailIgnoreCase("manager@test.com")).thenReturn(Optional.of(reviewer));
+        LocalDate today = TimeUtil.today();
+        WfhRequest current = WfhRequest.builder().user(user).status(WfhStatus.PENDING).startDate(today).endDate(today).reason("Need time").build();
+        current.setId(id);
+        when(wfhRequestRepository.findById(id)).thenReturn(Optional.of(current));
+        when(wfhRequestRepository.save(any(WfhRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.decide(id, new WfhDecisionRequest(true, "ok"), "manager@test.com");
+
+        verify(promptGeneratorService).generateForUser(user, today);
     }
 }

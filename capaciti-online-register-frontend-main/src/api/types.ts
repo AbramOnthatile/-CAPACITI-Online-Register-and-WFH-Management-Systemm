@@ -221,6 +221,18 @@ export interface DailyPrompt {
   response: Record<string, unknown> | null;
 }
 
+export interface PromptReview {
+  id: string;
+  userId: string;
+  userName: string;
+  stage: PromptStage;
+  promptDate: string;
+  status: PromptStatus;
+  submittedAt: string | null;
+  aiQualityFlag: boolean;
+  response: Record<string, unknown> | null;
+}
+
 export interface PromptCollection {
   serverTime: string;
   prompts: DailyPrompt[];

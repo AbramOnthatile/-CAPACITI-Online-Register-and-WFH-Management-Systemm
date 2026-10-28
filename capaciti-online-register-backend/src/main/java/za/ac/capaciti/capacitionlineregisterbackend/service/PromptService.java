@@ -2,6 +2,7 @@ package za.ac.capaciti.capacitionlineregisterbackend.service;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.common.QualityResult;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.PromptDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.PromptListResponse;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.PromptReviewDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.SubmitPromptRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.SubmitPromptResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.PromptStage;
@@ -126,6 +128,17 @@ public class PromptService implements IPromptService {
 
         return promptSubmissionWriter.complete(
                 promptId, user, now, responseFor(prompt.getStage(), request), quality);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PromptReviewDto> review(String email, LocalDate date) {
+        User viewer = findUser(email);
+        LocalDate day = date == null ? TimeUtil.today() : date;
+        List<DailyPrompt> prompts = "TECH_CHAMP".equals(viewer.getRole())
+                ? dailyPromptRepository.findForReviewByChampion(day, viewer)
+                : dailyPromptRepository.findForReview(day);
+        return prompts.stream().map(promptMapper::toReviewDto).toList();
     }
 
     private User findUser(String email) {
