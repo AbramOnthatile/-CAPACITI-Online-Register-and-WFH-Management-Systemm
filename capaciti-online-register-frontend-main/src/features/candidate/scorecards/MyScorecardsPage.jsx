@@ -30,7 +30,9 @@ const scoreClasses = {
 const MyScorecardsPage = () => {
   const { scorecards: loadedScorecards, loading, error, refresh } = useMyScorecards();
   const scorecards = loadedScorecards.slice().sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate));
+  // Bars are labelled by title (several assessments can share a date); the tooltip adds the date.
   const chartData = scorecards.slice().reverse().map((scorecard) => ({
+    key: scorecard.assessmentId ?? scorecard.id ?? `${scorecard.title}-${scorecard.assessmentDate}`,
     title: scorecard.title,
     date: scorecard.assessmentDate,
     overallPercent: scorecard.overallPercent,
@@ -59,9 +61,9 @@ const MyScorecardsPage = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 8 }}>
                     <CartesianGrid {...gridProps} />
-                    <XAxis dataKey="date" {...xAxisProps} />
+                    <XAxis dataKey="key" tickFormatter={(key) => chartData.find((item) => item.key === key)?.title ?? key} interval={0} {...xAxisProps} />
                     <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} unit="%" {...yAxisProps} />
-                    <Tooltip cursor={{ fill: chartInk.cursor }} content={<ChartTooltip labelFormatter={(label) => `Assessment · ${label}`} valueFormatter={(value) => `${value}%`} />} />
+                    <Tooltip cursor={{ fill: chartInk.cursor }} content={<ChartTooltip labelFormatter={(key) => { const item = chartData.find((entry) => entry.key === key); return item ? `${item.title} · ${item.date}` : key; }} valueFormatter={(value) => `${value}%`} />} />
                     <Bar dataKey="overallPercent" name="Overall score" fill={brandSeries} radius={[4, 4, 0, 0]} maxBarSize={44} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>

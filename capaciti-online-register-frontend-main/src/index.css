@@ -297,7 +297,7 @@ textarea {
     @apply overflow-x-auto;
   }
   .table {
-    @apply min-w-full text-left text-sm;
+    @apply w-full min-w-full text-left text-sm;
   }
   .table thead {
     @apply border-b border-slate-100 bg-slate-50/70;

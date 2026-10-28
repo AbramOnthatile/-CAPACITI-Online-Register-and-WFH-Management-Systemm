@@ -125,6 +125,19 @@ function toUiScorecard(scorecard: MyScorecardDto): UiMyScorecard {
   };
 }
 
+// Defined once (not inside the hook) so pages can depend on it without re-fetching every render.
+function fetchAssessment(id: string) {
+  return queryClient.fetchQuery<AssessmentDetailDto>({
+    queryKey: scorecardKeys.detail(id),
+    queryFn: async () => {
+      if (!useMocks) return apiClient.get<AssessmentDetailDto>(`/assessments/${id}`);
+      const assessment = loadAssessments().find((item) => item.id === id);
+      if (!assessment) throw new Error('Scorecard not found.');
+      return detailOf(assessment);
+    },
+  });
+}
+
 export function useScorecards(params: AssessmentsQueryParams = {}) {
   const cache = useQueryClient();
   const query = usePageApiQuery<AssessmentSummaryDto>(
@@ -251,15 +264,7 @@ export function useScorecards(params: AssessmentsQueryParams = {}) {
     loading: query.isLoading,
     error: query.error,
     refresh: async () => { await query.refetch(); },
-    getAssessment: (id: string) => queryClient.fetchQuery<AssessmentDetailDto>({
-      queryKey: scorecardKeys.detail(id),
-      queryFn: async () => {
-        if (!useMocks) return apiClient.get<AssessmentDetailDto>(`/assessments/${id}`);
-        const assessment = loadAssessments().find((item) => item.id === id);
-        if (!assessment) throw new Error('Scorecard not found.');
-        return detailOf(assessment);
-      },
-    }),
+    getAssessment: fetchAssessment,
     createAssessment: createMutation.mutateAsync,
     saveAssessment: (id: string, request: SaveEntriesRequest | UiSaveEntriesRequest) => saveMutation.mutateAsync({ id, request }),
     setAssessmentStatus: (id: string, action: 'submit' | 'reopen') => statusMutation.mutateAsync({ id, action }),

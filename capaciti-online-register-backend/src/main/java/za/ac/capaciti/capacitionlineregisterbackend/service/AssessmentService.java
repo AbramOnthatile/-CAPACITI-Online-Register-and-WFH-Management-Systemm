@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.Assessment;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.AttendanceRecord;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.Notification;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.ScorecardEntry;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.scorecard.AssessmentDetailDto;
@@ -33,6 +34,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.exception.ResourceNotFoundEx
 import za.ac.capaciti.capacitionlineregisterbackend.mappers.ScorecardMapper;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.AssessmentRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.AttendanceRecordRepository;
+import za.ac.capaciti.capacitionlineregisterbackend.repository.NotificationRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.ScorecardEntryRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.UserRepository;
 
@@ -40,6 +42,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.repository.UserRepository;
 public class AssessmentService implements IAssessmentService {
 
     private static final String ASSESSMENT_TARGET = "ASSESSMENT";
+    static final String SCORECARD_SHARED = "SCORECARD_SHARED";
 
     private final AssessmentRepository assessmentRepository;
     private final ScorecardEntryRepository scorecardEntryRepository;
@@ -48,6 +51,7 @@ public class AssessmentService implements IAssessmentService {
     private final ScorecardMapper scorecardMapper;
     private final AttendanceScoreCalculator scoreCalculator;
     private final AuditService auditService;
+    private final NotificationRepository notificationRepository;
 
     public AssessmentService(
             AssessmentRepository assessmentRepository,
@@ -56,7 +60,8 @@ public class AssessmentService implements IAssessmentService {
             AttendanceRecordRepository attendanceRecordRepository,
             ScorecardMapper scorecardMapper,
             AttendanceScoreCalculator scoreCalculator,
-            AuditService auditService) {
+            AuditService auditService,
+            NotificationRepository notificationRepository) {
         this.assessmentRepository = assessmentRepository;
         this.scorecardEntryRepository = scorecardEntryRepository;
         this.userRepository = userRepository;
@@ -64,6 +69,7 @@ public class AssessmentService implements IAssessmentService {
         this.scorecardMapper = scorecardMapper;
         this.scoreCalculator = scoreCalculator;
         this.auditService = auditService;
+        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -180,6 +186,7 @@ public class AssessmentService implements IAssessmentService {
         assessment.setStatus(AssessmentStatus.SUBMITTED);
         assessment.setSubmittedAt(Instant.now());
         assessmentRepository.save(assessment);
+        notifyCandidates(assessment, mentor, entries);
         Double groupAverage = scorecardEntryRepository.averageOverallByAssessmentId(assessmentId);
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("groupAverage", groupAverage);
@@ -275,7 +282,7 @@ public class AssessmentService implements IAssessmentService {
             throw notFound();
         }
         return scorecardEntryRepository
-                .findByCandidateIdAndAssessmentStatusOrderByAssessmentAssessmentDateDesc(
+                .findByCandidateIdAndAssessmentStatusOrderByAssessmentAssessmentDateDescAssessmentSubmittedAtDesc(
                         candidate.getId(), AssessmentStatus.SUBMITTED)
                 .stream()
                 .map(scorecardMapper::toMyScorecardDto)
@@ -294,6 +301,20 @@ public class AssessmentService implements IAssessmentService {
                 .filter(found -> found.getAssessment().getStatus() == AssessmentStatus.SUBMITTED)
                 .orElseThrow(AssessmentService::notFound);
         return scorecardMapper.toMyScorecardDto(entry);
+    }
+
+    // Each scored candidate hears that their scorecard is ready (or was updated after a reopen).
+    private void notifyCandidates(Assessment assessment, User mentor, List<ScorecardEntry> entries) {
+        boolean updated = assessment.getReopenedAt() != null;
+        String title = updated ? "Your scorecard was updated" : "Your scorecard is ready";
+        List<Notification> notifications = new ArrayList<>();
+        for (ScorecardEntry entry : entries) {
+            String message = mentor.getFullName() + (updated ? " updated" : " shared") + " your scores for \""
+                    + assessment.getTitle() + "\": " + entry.getOverallPercent() + "% overall."
+                    + " Open Scorecards to read your feedback.";
+            notifications.add(new Notification(entry.getCandidate(), mentor, title, message, SCORECARD_SHARED));
+        }
+        notificationRepository.saveAll(notifications);
     }
 
     private User currentUser(String email) {
