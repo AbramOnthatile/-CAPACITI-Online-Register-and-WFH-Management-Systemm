@@ -128,8 +128,8 @@ export interface DailyPrompt {
   id: string;
   stage: PromptStage;
   promptDate: string;
-  scheduledAt: string;
-  expiresAt: string;
+  scheduledAt: string | number;
+  expiresAt: string | number;
   status: PromptStatus;
   submittedAt: string | null;
   attemptCount: number;

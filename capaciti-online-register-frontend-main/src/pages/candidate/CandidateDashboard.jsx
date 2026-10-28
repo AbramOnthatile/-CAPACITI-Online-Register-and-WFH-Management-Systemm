@@ -10,6 +10,20 @@ import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
 import { getStatusMetadata } from '../../lib/status';
+import { parseTimestamp } from '../../lib/timestamps';
+
+const promptExpiryFormatter = new Intl.DateTimeFormat('en-ZA', {
+  timeZone: 'Africa/Johannesburg',
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+const formatPromptExpiry = (value) => {
+  const timestamp = parseTimestamp(value);
+  return Number.isFinite(timestamp) ? promptExpiryFormatter.format(new Date(timestamp)) : 'Unavailable';
+};
 
 const formatClock = (value) => (value
   ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
@@ -155,7 +169,7 @@ const CandidateDashboard = () => {
                   <li key={stage} className="list-row">
                     <div className="min-w-0">
                       <p className="font-bold text-navy">{getStatusMetadata(stage).label}</p>
-                      {prompt && <p className="mt-0.5 text-xs text-slate-400">Expires {new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(prompt.expiresAt))}</p>}
+                      {prompt && <p className="mt-0.5 text-xs text-slate-400">Expires {formatPromptExpiry(prompt.expiresAt)}</p>}
                     </div>
                     {prompt ? <StatusBadge status={prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}
                   </li>
