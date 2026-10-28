@@ -61,7 +61,7 @@ public class JwtAuthenticationConfig extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-        } catch (JwtException | UsernameNotFoundException exception) {
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException exception) {
             logger.debug("JWT authentication failed: {}", exception.getClass().getSimpleName());
             SecurityContextHolder.clearContext();
         }

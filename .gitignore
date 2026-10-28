@@ -1,3 +1,8 @@
 target/
 .claude/
 dist/
+
+# Local secrets: never commit these. Copy .env.example instead.
+.env
+.env.local
+.env.*.local

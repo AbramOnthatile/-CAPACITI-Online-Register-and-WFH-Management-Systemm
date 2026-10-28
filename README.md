@@ -28,14 +28,17 @@ The frontend talks to the Spring Boot backend at `/api/v1`. Set `VITE_USE_MOCKS=
 
 ## Backend
 
-Set these environment variables before starting the backend. Never commit their values.
+First create the tables: run `capaciti-online-register-backend/database/schema.sql` once in the Supabase SQL Editor.
+
+Then copy `capaciti-online-register-backend/.env.example` to `.env` in the same folder and fill it in. The backend reads that file on startup, and it is git-ignored. Use the Supabase **Session pooler** connection details; the direct `db.<project>.supabase.co` host is IPv6-only and fails on most networks. The settings are:
 
 | Variable | Required | Purpose |
 |---|---|---|
 | `SUPABASE_DB_URL` | yes | JDBC URL, must start with `jdbc:postgresql://` |
 | `SUPABASE_DB_USER` | yes | Database user |
 | `SUPABASE_DB_PASSWORD` | yes | Database password |
-| JWT settings | yes | `jwt.secret` (Base64, 32+ bytes) and `jwt.expiration-minutes`; setup to be documented |
+| `JWT_SECRET` | yes | Token signing key: Base64 of at least 32 random bytes; keep it the same across restarts |
+| `JWT_EXPIRATION_MINUTES` | no | Token lifetime, default 60 |
 | `CORS_ALLOWED_ORIGINS` | no | Comma-separated frontend origins, default `http://localhost:3000` |
 | `GEMINI_API_KEY` | no | AI quality gate; without it text is accepted and flagged |
 | `TEAMS_WEBHOOK_URL` | no | Teams alerts for on-site IT issues and prolonged blockers |
@@ -53,7 +56,7 @@ Then run, from `capaciti-online-register-backend`:
 - API docs: http://localhost:8080/swagger-ui.html
 - Tests: `./mvnw test`
 
-The seeder creates `admin@example.com`, `champ@example.com` and `candidate1@example.com` to `candidate5@example.com`, all with the `SEED_PASSWORD` value, and the campus "CAPACITI Cape Town" with placeholder coordinates. Set the real campus coordinates and whitelisted IPs with `PUT /api/v1/campuses/{id}` before testing on-site clock-in.
+The seeder creates `admin@capaciti.com`, `champ@capaciti.com` and `candidate1@capaciti.com` to `candidate5@capaciti.com`, all with the `SEED_PASSWORD` value, and the campus "CAPACITI Cape Town" with placeholder coordinates. Set the real campus coordinates and whitelisted IPs with `PUT /api/v1/campuses/{id}` before testing on-site clock-in.
 
 ## Frontend
 

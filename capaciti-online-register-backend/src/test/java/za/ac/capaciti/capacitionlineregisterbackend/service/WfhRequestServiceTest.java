@@ -65,8 +65,7 @@ class WfhRequestServiceTest {
         user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("candidate@test.com");
-        user.setFirstName("Jane");
-        user.setLastName("Doe");
+        user.setFullName("Jane Doe");
         user.setRole("CANDIDATE");
     }
 

@@ -263,8 +263,7 @@ class AssessmentServiceTest {
         User candidate = new User();
         candidate.setId(UUID.randomUUID());
         candidate.setEmail(CANDIDATE_EMAIL);
-        candidate.setFirstName("Test");
-        candidate.setLastName("Candidate");
+        candidate.setFullName("Test Candidate");
         candidate.setRole(UserRole.CANDIDATE.name());
         candidate.setChampion(champion);
         return candidate;

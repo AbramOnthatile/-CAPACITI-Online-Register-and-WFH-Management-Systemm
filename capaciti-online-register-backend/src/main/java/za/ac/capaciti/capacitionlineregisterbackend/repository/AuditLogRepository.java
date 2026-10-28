@@ -17,16 +17,16 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
             SELECT a FROM AuditLog a
             WHERE (:actorId IS NULL OR a.actor.id = :actorId)
               AND (:action IS NULL OR a.action = :action)
-              AND (:createdFrom IS NULL OR a.createdAt >= :createdFrom)
-              AND (:createdTo IS NULL OR a.createdAt <= :createdTo)
+              AND (cast(:createdFrom as Instant) IS NULL OR a.createdAt >= :createdFrom)
+              AND (cast(:createdTo as Instant) IS NULL OR a.createdAt <= :createdTo)
             ORDER BY a.createdAt DESC
             """,
             countQuery = """
             SELECT COUNT(a) FROM AuditLog a
             WHERE (:actorId IS NULL OR a.actor.id = :actorId)
               AND (:action IS NULL OR a.action = :action)
-              AND (:createdFrom IS NULL OR a.createdAt >= :createdFrom)
-              AND (:createdTo IS NULL OR a.createdAt <= :createdTo)
+              AND (cast(:createdFrom as Instant) IS NULL OR a.createdAt >= :createdFrom)
+              AND (cast(:createdTo as Instant) IS NULL OR a.createdAt <= :createdTo)
             """)
     Page<AuditLog> searchAuditLogs(
             @Param("actorId") UUID actorId,

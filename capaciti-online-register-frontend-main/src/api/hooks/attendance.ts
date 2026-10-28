@@ -69,7 +69,8 @@ export function useAttendanceApi(userId?: string, enabled = true, params: Attend
   const todayKey = attendanceKeys.today(userId);
   const todayQuery = useApiQuery<AttendanceRecord | null>(
     todayKey,
-    () => apiClient.get<AttendanceRecord | null>('/attendance/today'),
+    // No record yet comes back as an empty 200; the query cache needs null, not undefined.
+    async () => (await apiClient.get<AttendanceRecord | null>('/attendance/today')) ?? null,
     () => {
       const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
       return readMockCollection('attendance', mockAttendance).find((record) =>

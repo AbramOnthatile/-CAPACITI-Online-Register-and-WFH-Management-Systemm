@@ -62,12 +62,12 @@ public interface ReportRepository extends Repository<AttendanceRecord, UUID> {
 
     @Query("""
             select u.id as userId,
-                   concat(u.firstName, concat(' ', u.lastName)) as fullName,
+                   u.fullName as fullName,
                    count(case when a.clockInAt is not null then a.id end) as present,
-                   count(case when a.arrivalStatus = :#{T(za.ac.capacitionlineregisterbackend.enums.ArrivalStatus).ON_TIME}
+                   count(case when a.arrivalStatus = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus).ON_TIME}
                               then a.id end) as onTime,
-                   count(case when a.arrivalStatus = :#{T(za.ac.capacitionlineregisterbackend.enums.ArrivalStatus).LATE_UNEXCUSED}
-                                   or a.arrivalStatus = :#{T(za.ac.capacitionlineregisterbackend.enums.ArrivalStatus).LATE_EXCUSED}
+                   count(case when a.arrivalStatus = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus).LATE_UNEXCUSED}
+                                   or a.arrivalStatus = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus).LATE_EXCUSED}
                               then a.id end) as late,
                    count(case when a.arrivalStatus = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus).ABSENT_UNEXCUSED}
                               then a.id end) as absent,
@@ -78,14 +78,14 @@ public interface ReportRepository extends Repository<AttendanceRecord, UUID> {
             from AttendanceRecord a
             join a.user u
             where a.attendanceDate between :from and :to
-            group by u.id, u.firstName, u.lastName
+            group by u.id, u.fullName
             order by fullName
             """)
     List<CandidateRow> perCandidate(@Param("from") LocalDate from, @Param("to") LocalDate to);
 
     @Query("""
             select u.id as userId,
-                   concat(u.firstName, concat(' ', u.lastName)) as fullName,
+                   u.fullName as fullName,
                    a.arrivalStatus as arrivalStatus,
                    a.clockInAt as clockInAt
             from AttendanceRecord a

@@ -62,6 +62,9 @@ function createApiError(status: number, body: unknown, _statusText: string): Api
     fieldErrors = toFieldErrors(envelope.fieldErrors);
   }
 
+  if (status === 401 && code === 'AUTHENTICATION_FAILED') {
+    return new ApiError(status, code, message || 'Invalid email or password.', fieldErrors);
+  }
   if (status === 401) return new ApiError(status, code, 'Your session has expired. Please sign in again.', fieldErrors);
   if (status === 403) return new ApiError(status, code, 'You do not have permission to perform this action.', fieldErrors);
   if (status === 404) return new ApiError(status, code, 'The requested item could not be found.', fieldErrors);
