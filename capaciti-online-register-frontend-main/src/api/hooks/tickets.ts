@@ -9,11 +9,11 @@ import {
   type TicketActionResponse,
   type TicketResolution,
   type TicketType,
-  type WorkMode,
+  WorkMode,
 } from '../types';
 import { mockTickets, mockUsers } from '../../mocks/entities';
 import { mergeMockCollection, readMockCollection } from '../../mocks/storage';
-import { pageFromContent, queryString, qualityResult, useApiMutation, usePageApiQuery } from './shared';
+import { queryString, qualityResult, useApiMutation, usePageApiQuery } from './shared';
 
 export interface TicketsQueryParams {
   page?: number;
@@ -70,6 +70,7 @@ export function useTicketsApi(userId?: string, enabled = true, params: TicketsQu
         userId: user.id,
         userName: user.fullName,
         type: request.type,
+        workMode: WorkMode.ON_SITE,
         title: request.title,
         description: request.description,
         attachmentUrl: request.attachmentUrl,

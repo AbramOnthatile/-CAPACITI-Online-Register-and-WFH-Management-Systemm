@@ -1,5 +1,6 @@
-export type AssessmentType = 'WEEKLY' | 'PROJECT';
-export type AssessmentStatus = 'DRAFT' | 'SUBMITTED';
+import { AssessmentStatus, AssessmentType } from './types';
+
+export { AssessmentStatus, AssessmentType };
 
 export type ScoreCriterion =
   | 'attendance'
@@ -17,8 +18,8 @@ export interface AssessmentSummaryDto {
   type: AssessmentType;
   status: AssessmentStatus;
   assessmentDate: string;
-  periodStart: string;
-  periodEnd: string;
+  periodStart: string | null;
+  periodEnd: string | null;
   entryCount: number;
   groupAveragePercent: number | null;
   submittedAt: string | null;

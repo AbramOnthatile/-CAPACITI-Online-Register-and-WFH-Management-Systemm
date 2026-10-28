@@ -156,15 +156,15 @@ public interface ReportRepository extends Repository<AttendanceRecord, UUID> {
     @Query("""
             select count(t)
             from SupportTicket t
-            where t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus).OPEN}
+            where t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus).OPEN}
             """)
     long countOpenTickets();
 
     @Query("""
             select count(t)
             from SupportTicket t
-            where t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus).OPEN}
-              and t.type = :#{T(za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType).BLOCKER}
+            where t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus).OPEN}
+              and t.type = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType).BLOCKER}
               and t.prolonged = true
             """)
     long countProlongedOpenBlockers();
@@ -172,7 +172,7 @@ public interface ReportRepository extends Repository<AttendanceRecord, UUID> {
     @Query("""
             select count(w)
             from WfhRequest w
-            where w.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus).PENDING}
+            where w.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus).PENDING}
             """)
     long countPendingWfh();
 
@@ -187,7 +187,7 @@ public interface ReportRepository extends Repository<AttendanceRecord, UUID> {
             select count(t)
             from SupportTicket t
             where t.resolvedAt between :from and :to
-              and t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus).RESOLVED}
+              and t.status = :#{T(za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus).RESOLVED}
             """)
     long countTicketsResolved(@Param("from") Instant from, @Param("to") Instant to);
 

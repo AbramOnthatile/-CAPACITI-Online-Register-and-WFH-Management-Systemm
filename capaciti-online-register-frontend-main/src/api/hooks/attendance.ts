@@ -50,9 +50,9 @@ function makeClockInRequest(value: ClockInRequest | WorkMode, lateReason?: strin
 }
 
 function makeClockOutRequest(value?: ClockOutRequest | Partial<Omit<ClockOutRequest, 'draftKey'>>): ClockOutRequest {
-  const request = value ?? {};
+  const request: Partial<ClockOutRequest> = value ?? {};
   return {
-    draftKey: 'draftKey' in request && request.draftKey ? request.draftKey : draftId(),
+    draftKey: request.draftKey || draftId(),
     earlyClockoutReason: request.earlyClockoutReason ?? null,
     lateClockoutNote: request.lateClockoutNote ?? null,
     deliverableLink: request.deliverableLink ?? null,

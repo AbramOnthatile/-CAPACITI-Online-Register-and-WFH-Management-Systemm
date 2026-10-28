@@ -151,9 +151,9 @@ export interface ClockInRequest {
   draftKey: string;
   workMode: WorkMode;
   lateReason: string | null;
-  latitude?: number;
-  longitude?: number;
-  accuracyM?: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracyM?: number | null;
 }
 
 export interface ClockOutRequest {
@@ -258,6 +258,7 @@ export interface SupportTicket {
   title: string;
   description: string;
   attachmentUrl: string | null;
+  workMode: WorkMode;
   status: TicketStatus;
   isProlonged: boolean;
   resolvedByName: string | null;

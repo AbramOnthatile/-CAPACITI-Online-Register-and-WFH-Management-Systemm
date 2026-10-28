@@ -7,9 +7,9 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.CreateTic
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.ResolveTicketRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.TicketActionResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.TicketDto;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WorkMode;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 
 public interface ITicketService {
     TicketActionResponse create(String email, CreateTicketRequest request);

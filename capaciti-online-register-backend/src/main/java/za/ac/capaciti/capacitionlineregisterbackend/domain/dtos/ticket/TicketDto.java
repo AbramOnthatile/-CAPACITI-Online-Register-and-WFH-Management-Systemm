@@ -2,9 +2,9 @@ package za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket;
 
 import java.time.Instant;
 import java.util.UUID;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WorkMode;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 
 public record TicketDto(
         UUID id,
@@ -16,7 +16,7 @@ public record TicketDto(
         String description,
         String attachmentUrl,
         TicketStatus status,
-        boolean prolonged,
+        boolean isProlonged,
         String resolvedByName,
         Instant resolvedAt,
         String resolutionNote,

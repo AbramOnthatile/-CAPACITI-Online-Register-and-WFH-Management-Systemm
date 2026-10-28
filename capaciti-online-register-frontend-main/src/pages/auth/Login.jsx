@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, Sparkles, Shield, GraduationCap, Award, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, LogIn, Sparkles, Shield, GraduationCap, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import BrandLogo from '../../components/common/BrandLogo';
 import { UserRole, WfhStatus } from '../../api/types';
 import StatusBadge from '../../components/common/StatusBadge';
 import { demoOnly } from '../../mocks/demoOnly';
@@ -81,10 +80,11 @@ const Login = () => {
     }
   };
 
+  // Live mode only fills the email; the demo password is typed, never stored in the frontend.
   const handleDemoLogin = (email) => {
-    setForm({ email, password: 'Password123!' });
+    setForm({ email, password: '' });
     setErrors({});
-    void authenticate(email, 'Password123!');
+    if (useMocks) void authenticate(email, 'mock');
   };
 
   return (
@@ -123,7 +123,7 @@ const Login = () => {
             <div className="flex items-center justify-between mb-2.5">
               <p className="text-[11px] font-bold uppercase tracking-wider text-[#F1D1D1] flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[#F25251]" />
-                Demo Accounts (1-Click Sign In)
+                Demo Accounts
               </p>
             </div>
             <div className="space-y-2">
@@ -133,8 +133,8 @@ const Login = () => {
                   <button
                     key={acc.role}
                     type="button"
-                    disabled={!useMocks || loading || authLoading}
-                    aria-disabled={!useMocks || loading || authLoading}
+                    disabled={loading || authLoading}
+                    aria-disabled={loading || authLoading}
                     title={!useMocks ? demoOnly.notice : undefined}
                     onClick={() => handleDemoLogin(acc.email)}
                     className="group flex w-full items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs text-white hover:bg-white/20 transition-all text-left"
@@ -182,11 +182,9 @@ const Login = () => {
                 <button
                   key={acc.role}
                   type="button"
-                  disabled={!useMocks}
-                  aria-disabled={!useMocks}
                   title={!useMocks ? demoOnly.notice : undefined}
                   onClick={() => {
-                    setForm({ email: acc.email, password: 'Password123!' });
+                    setForm({ email: acc.email, password: '' });
                     setErrors({});
                   }}
                   className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
@@ -210,7 +208,7 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 className="input text-xs"
-                placeholder="name@capaciti.test"
+                placeholder="name@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
@@ -222,7 +220,6 @@ const Login = () => {
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Password
                 </label>
-                <span className="text-[11px] font-mono font-medium text-slate-400">Password123!</span>
               </div>
               <div className="relative">
                 <input

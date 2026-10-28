@@ -10,7 +10,7 @@ import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
-import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { Skeleton } from '../../components/common/RequestState';
 import { canRetryError } from '../../api/client';
 
 const AdminDashboard = () => {

@@ -8,7 +8,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.wfh.CreateWfhReq
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.wfh.WfhActionResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.wfh.WfhDecisionRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.wfh.WfhRequestDto;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus;
 
 public interface IWfhRequestService {
     WfhActionResponse create(String email, CreateWfhRequest request);

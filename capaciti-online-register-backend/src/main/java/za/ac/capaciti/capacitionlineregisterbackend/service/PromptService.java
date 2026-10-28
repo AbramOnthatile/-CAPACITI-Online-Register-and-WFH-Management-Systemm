@@ -162,9 +162,6 @@ public class PromptService implements IPromptService {
                         && Helper.isNullOrEmpty(request.blockerNote())) {
                     throw new BadRequestException("blockerNote is required when progressStatus is DELAYED or BLOCKED");
                 }
-                if ("BLOCKED".equals(request.progressStatus())) {
-                    // TODO Member 4: create a ticket through its service when available.
-                }
             }
             case EOD_WRAP_UP -> {
                 if (!isValidWorkLink(request.workLink())) {

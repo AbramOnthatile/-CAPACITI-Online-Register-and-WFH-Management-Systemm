@@ -10,110 +10,75 @@ The application provides separate experiences for:
 - **Tech Champions** — review candidates, monitor attendance, assess WFH requests and progress, and generate reports.
 - **Administrators** — manage users, review escalations, inspect audit activity, and access reports.
 
-The current frontend uses mock authentication and mock data. It is suitable for local demonstration and can be connected to a real backend through the configured API client.
+The frontend talks to the Spring Boot backend at `/api/v1`. Set `VITE_USE_MOCKS=true` to run the frontend alone on mock data.
 
 ## Project structure
 
 ```text
 .
-├── capaciti-online-register-frontend/
-│   ├── src/
-│   │   ├── components/          # Shared UI components
-│   │   ├── context/             # Authentication and application state
-│   │   ├── data/                # Mock users and records
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── layouts/             # Role-based navigation layouts
-│   │   ├── pages/               # Candidate, champion, and admin pages
-│   │   ├── routes/              # Protected and role-based routes
-│   │   └── services/            # API and business-service helpers
-│   ├── public/                 # Static assets
-│   ├── package.json
-│   └── vite.config.ts
-└── README.md
+├── capaciti-online-register-backend/        # Java 21, Spring Boot, Maven, Supabase PostgreSQL
+└── capaciti-online-register-frontend-main/  # Vite, React, TypeScript
 ```
 
 ## Prerequisites
 
-- Node.js 18 or newer
-- npm
-- Java 25 LTS for the backend
-- A modern browser
+- Java 21 (point `JAVA_HOME` at a JDK 21 install; newer JDKs are not supported by the build)
+- Node.js 18 or newer and npm
+- A Supabase PostgreSQL database with the project schema applied
 
-## Installation
+## Backend
 
-From the repository root, install the frontend dependencies:
+Set these environment variables before starting the backend. Never commit their values.
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `SUPABASE_DB_URL` | yes | JDBC URL, must start with `jdbc:postgresql://` |
+| `SUPABASE_DB_USER` | yes | Database user |
+| `SUPABASE_DB_PASSWORD` | yes | Database password |
+| JWT settings | yes | `jwt.secret` (Base64, 32+ bytes) and `jwt.expiration-minutes`; setup to be documented |
+| `CORS_ALLOWED_ORIGINS` | no | Comma-separated frontend origins, default `http://localhost:3000` |
+| `GEMINI_API_KEY` | no | AI quality gate; without it text is accepted and flagged |
+| `TEAMS_WEBHOOK_URL` | no | Teams alerts for on-site IT issues and prolonged blockers |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | no | Signed URLs for storage attachments |
+| `SEED_ENABLED`, `SEED_PASSWORD` | no | `SEED_ENABLED=true` creates the demo campus and users with `SEED_PASSWORD` |
+| `APP_TRUSTED_PROXIES` | no | Proxy IPs/CIDRs allowed to set `X-Forwarded-For` |
+
+Then run, from `capaciti-online-register-backend`:
 
 ```bash
-cd capaciti-online-register-frontend
-npm install
+./mvnw spring-boot:run
 ```
 
-## Run locally
+- Health: http://localhost:8080/actuator/health
+- API docs: http://localhost:8080/swagger-ui.html
+- Tests: `./mvnw test`
 
-Start the development server:
+The seeder creates `admin@example.com`, `champ@example.com` and `candidate1@example.com` to `candidate5@example.com`, all with the `SEED_PASSWORD` value, and the campus "CAPACITI Cape Town" with placeholder coordinates. Set the real campus coordinates and whitelisted IPs with `PUT /api/v1/campuses/{id}` before testing on-site clock-in.
+
+## Frontend
+
+From `capaciti-online-register-frontend-main`:
 
 ```bash
+npm install
 npm run dev
 ```
 
-Vite will print a local address, usually:
-
-- http://localhost:5173
-
-Open the address in a browser.
-
-## Demo accounts
-
-The application includes mock users. Use any of the following accounts:
-
-| Role | Email | Password |
-|---|---|---|
-| Candidate | candidate@capaciti.test | Password123! |
-| Tech Champion | champion@capaciti.test | Password123! |
-| Administrator | admin@capaciti.test | Password123! |
-
-> These credentials are intended only for local demonstration. Do not use them in a production environment.
-
-## Backend connection
-
-The frontend API client uses the following URL by default:
-
-```text
-http://localhost:8080
-```
-
-You can override it by creating a local environment file:
-
-```dotenv
-VITE_API_BASE_URL=http://localhost:8080
-```
-
-The API URL is configured in the frontend service layer. The current login flow uses the mock users in the frontend instead of calling the backend.
-
-## Available scripts
-
-From the frontend directory:
+The app runs at http://localhost:3000. `.env.development` points it at `http://localhost:8080/api/v1` with mocks off.
 
 ```bash
-npm run dev       # Start the development server
-npm run build     # Create a production build
-npm run preview   # Preview the production build
+npm run dev        # Start the development server
+npm run typecheck  # TypeScript check
+npm run lint       # ESLint
+npm run build      # Production build in dist/
+npm run preview    # Preview the production build
 ```
 
-The production build is generated in the frontend's `dist` directory.
+On the login page the demo account buttons fill in the email; type the demo password to sign in.
 
 ## Important notes
 
-- Authentication state is saved in browser local storage.
-- The current application uses mock data for users, attendance, WFH requests, progress, notifications, and reports.
+- The API token is kept in session storage and cleared on sign-out.
 - The routes enforce roles, so a candidate cannot access champion or administrator pages, and the reverse is also restricted.
-- Replace the mock service implementation with API calls before using the application in production.
+- Break tracking, profile editing and check-in feedback have no backend endpoint yet and work in mock mode only.
 - Never commit real passwords, tokens, or sensitive environment values.
-
-## Development workflow
-
-1. Install dependencies with `npm install`.
-2. Start the app with `npm run dev`.
-3. Sign in with a demo account.
-4. Explore the role-specific dashboard.
-5. Run `npm run build` before deploying.

@@ -12,9 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.SupportTicket;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WorkMode;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 
 public interface SupportTicketRepository extends JpaRepository<SupportTicket, UUID> {
 
@@ -40,6 +40,6 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, UU
     @EntityGraph(attributePaths = {"user", "resolvedBy"})
     Optional<SupportTicket> findWithUsersById(UUID id);
 
-    @Query("select t from SupportTicket t where t.type = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType.BLOCKER and t.status = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus.OPEN and t.prolonged = false and t.createdAt < :cutoff")
+    @Query("select t from SupportTicket t join fetch t.user where t.type = za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType.BLOCKER and t.status = za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus.OPEN and t.prolonged = false and t.createdAt < :cutoff")
     List<SupportTicket> findOpenBlockersOlderThan(@Param("cutoff") Instant cutoff);
 }

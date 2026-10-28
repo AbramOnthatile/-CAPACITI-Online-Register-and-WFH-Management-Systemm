@@ -30,6 +30,9 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     Page<AttendanceRecord> findByUserOrderByAttendanceDateDesc(User user, Pageable pageable);
 
+    @EntityGraph(attributePaths = "user")
+    List<AttendanceRecord> findByAttendanceDateAndClockInAtIsNotNullAndClockOutAtIsNull(LocalDate date);
+
     @Query(value = """
             SELECT a FROM AttendanceRecord a
             WHERE (:userId IS NULL OR a.user.id = :userId)

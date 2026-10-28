@@ -14,9 +14,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WorkMode;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 
 @Entity
 @Table(name = "support_tickets")

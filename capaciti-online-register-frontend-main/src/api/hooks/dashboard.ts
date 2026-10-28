@@ -1,5 +1,4 @@
 import { apiClient } from '../client';
-import { useMocks } from '../mockMode';
 import { UserRole, type CandidateDashboardDto, type ChampionDashboardDto } from '../types';
 import { mockAttendance, mockPrompts, mockTickets, mockWfhRequests } from '../../mocks/entities';
 import { readMockCollection } from '../../mocks/storage';
