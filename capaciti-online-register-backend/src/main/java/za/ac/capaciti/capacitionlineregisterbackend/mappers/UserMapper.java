@@ -18,7 +18,7 @@ public class UserMapper {
                 user.getCampus() == null ? null : user.getCampus().getId(),
                 user.getCampus() == null ? null : user.getCampus().getName(),
                 user.getChampion() == null ? null : user.getChampion().getId(),
-                user.getActive(),
+                user.isActive(),
                 user.getCreatedAt());
     }
 }

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Coffee, UtensilsCrossed, Building2, Home, Info, History, ChevronRight } from 'lucide-react';
+import { Clock, Coffee, UtensilsCrossed, Building2, Home, History, ChevronRight } from 'lucide-react';
 import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
 import { WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';

@@ -37,7 +37,7 @@ class PromptGeneratorServiceTest {
 
     @Test
     void generatesThreeUniquePromptsForAnApprovedWfhCandidate() {
-        LocalDate date = LocalDate.of(2026, 10, 27);
+        LocalDate date = LocalDate.of(2030, 1, 7); // a future Monday, so no window has expired yet
         User candidate = new User();
         candidate.setRole("CANDIDATE");
         WfhRequest approvedRequest = new WfhRequest();

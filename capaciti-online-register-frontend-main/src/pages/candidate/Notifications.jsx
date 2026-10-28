@@ -8,7 +8,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import { WfhStatus } from '../../api/types';
 
 const Notifications = () => {
-  const { notifications, notificationsLoading, notificationsError, markNotificationRead, isDemoMode } = useApp();
+  const { notifications, notificationsLoading, notificationsError, markNotificationRead } = useApp();
   const [actionError, setActionError] = useState('');
   const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -31,7 +31,7 @@ const Notifications = () => {
       <Card title="Activity & announcements">
         {notificationsLoading
           ? <p role="status" className="meta">Loading notifications...</p>
-          : <NotificationList notifications={notifications} onMarkRead={isDemoMode ? handleMarkRead : undefined} />}
+          : <NotificationList notifications={notifications} onMarkRead={handleMarkRead} />}
       </Card>
     </div>
   );

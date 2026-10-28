@@ -11,7 +11,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.attendance.AttendanceActionResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.attendance.AttendanceDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.attendance.ClockInRequest;
@@ -29,15 +27,15 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.attendance.Clock
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.attendance.ExcuseRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
-import za.ac.capaciti.capacitionlineregisterbackend.service.AttendanceService;
+import za.ac.capaciti.capacitionlineregisterbackend.service.IAttendanceService;
 
 @RestController
 @RequestMapping("/api/v1/attendance")
 public class AttendanceController {
 
-    private final AttendanceService attendanceService;
+    private final IAttendanceService attendanceService;
 
-    public AttendanceController(AttendanceService attendanceService) {
+    public AttendanceController(IAttendanceService attendanceService) {
         this.attendanceService = attendanceService;
     }
 
@@ -95,7 +93,7 @@ public class AttendanceController {
     public ResponseEntity<AttendanceDto> excuse(
             @PathVariable UUID id,
             @Valid @RequestBody ExcuseRequest request,
-            @AuthenticationPrincipal User actor) {
-        return ResponseEntity.ok(attendanceService.excuse(id, request, actor));
+            Authentication authentication) {
+        return ResponseEntity.ok(attendanceService.excuse(id, request, authentication.getName()));
     }
 }

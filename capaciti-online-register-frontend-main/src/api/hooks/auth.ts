@@ -12,7 +12,7 @@ export function useAuthApi() {
   const loginMutation = useMutation<LoginResult, Error, LoginCredentials>({
     mutationFn: async (credentials) => {
       if (!useMocks) return apiClient.post<LoginResult>('/auth/login', credentials);
-      if (credentials.password !== 'Password123!') throw new Error('Invalid demo password.');
+      if (!credentials.password) throw new Error('Enter a password.');
       const user = readMockCollection('users', mockUsers).find((item) => item.email === credentials.email);
       if (!user) throw new Error('No demo account exists for that email address.');
       if (!user.active) throw new Error('This account is inactive. Ask an administrator to reactivate it.');

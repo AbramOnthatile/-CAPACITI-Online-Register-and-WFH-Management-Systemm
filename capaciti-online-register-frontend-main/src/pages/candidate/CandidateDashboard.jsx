@@ -23,7 +23,7 @@ const formatClock = (value) => (value
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
-  const { dashboard, dashboardLoading, dashboardError, attendanceLoading, wfh, wfhLoading, wfhError, prompts, activePrompts, promptsError, promptServerTime, clockIn, clockOut, refreshDashboard, refreshWfh, refreshPrompts } = useApp();
+  const { dashboard, dashboardLoading, dashboardError, attendanceLoading, wfh, wfhLoading, wfhError, prompts, activePrompts, promptsError, clockIn, clockOut, refreshDashboard, refreshWfh, refreshPrompts } = useApp();
   const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
   const [action, setAction] = useState('');
   const [actionError, setActionError] = useState('');

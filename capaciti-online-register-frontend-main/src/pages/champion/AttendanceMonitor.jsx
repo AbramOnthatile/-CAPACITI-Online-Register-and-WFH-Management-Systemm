@@ -1,9 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Download, Search, Clock3 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
-import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
 import { ArrivalStatus, DepartureStatus } from '../../api/types';

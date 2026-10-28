@@ -37,4 +37,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             @Param("active") Boolean active,
             @Param("text") String text,
             Pageable pageable);
+
+    @Query("""
+            SELECT u FROM User u
+            WHERE u.role = 'CANDIDATE'
+              AND u.champion.id = :championId
+              AND (:active IS NULL OR u.active = :active)
+              AND (:text IS NULL
+                   OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :text, '%')))
+            """)
+    Page<User> searchCandidatesOfChampion(
+            @Param("championId") UUID championId,
+            @Param("active") Boolean active,
+            @Param("text") String text,
+            Pageable pageable);
 }

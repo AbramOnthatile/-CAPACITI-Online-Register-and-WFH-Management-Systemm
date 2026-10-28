@@ -5,7 +5,6 @@ import { useApp } from '../../context/AppContext';
 import { useFilesApi } from '../../api/hooks';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
-import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
 import { getStatusMetadata } from '../../lib/status';
 import { ErrorState, Skeleton } from '../../components/common/RequestState';
@@ -13,7 +12,7 @@ import { openSignedAttachment } from '../../lib/storageAttachment';
 import { formatSastDateTime } from '../../lib/time';
 
 const BlockersTickets = () => {
-  const { tickets, ticketsLoading, ticketsError, resolveTicket, isDemoMode } = useApp();
+  const { tickets, ticketsLoading, ticketsError, resolveTicket } = useApp();
   const { getSignedUrl } = useFilesApi();
   const [resolutionNotes, setResolutionNotes] = useState({});
   const [resolvingId, setResolvingId] = useState('');
@@ -48,7 +47,6 @@ const BlockersTickets = () => {
 
       <ErrorState message={error || ticketsError?.message} />
       <ErrorState message={attachmentError} />
-      {!isDemoMode && <Alert tone="info">Administrator ticket data and actions are demo-only; use the Tech Champion ticket queue for live records.</Alert>}
       {ticketsLoading && <Skeleton label="Loading support tickets" />}
 
       <ul className="list">
@@ -87,7 +85,7 @@ const BlockersTickets = () => {
                       <textarea rows="2" className="input" value={resolutionNotes[ticket.id] ?? ''} onChange={(event) => setResolutionNotes((current) => ({ ...current, [ticket.id]: event.target.value }))} />
                     </label>
                     <div className="flex justify-end">
-                      <button type="button" disabled={!isDemoMode || resolvingId === ticket.id} onClick={() => void handleResolve(ticket.id)} className="btn btn-success w-full sm:w-auto">
+                      <button type="button" disabled={resolvingId === ticket.id} onClick={() => void handleResolve(ticket.id)} className="btn btn-success w-full sm:w-auto">
                         <Check className="h-4 w-4" />{resolvingId === ticket.id ? 'Resolving...' : 'Resolve ticket'}
                       </button>
                     </div>

@@ -21,6 +21,8 @@ public interface IUserService {
 
     Page<UserDto> list(UserRole role, Boolean active, String text, Pageable pageable);
 
+    Page<UserDto> listForChampion(String championEmail, Boolean active, String text, Pageable pageable);
+
     UserDto getById(UUID id);
 
     UserDto getCurrent(String email);

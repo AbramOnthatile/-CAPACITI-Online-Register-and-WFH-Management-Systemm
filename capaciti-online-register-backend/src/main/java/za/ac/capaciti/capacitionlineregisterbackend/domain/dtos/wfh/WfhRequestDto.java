@@ -3,7 +3,7 @@ package za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.wfh;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus;
 
 public record WfhRequestDto(
         UUID id,

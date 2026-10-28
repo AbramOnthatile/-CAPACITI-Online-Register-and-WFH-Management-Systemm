@@ -3,7 +3,7 @@ package za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
 
 public record CreateTicketRequest(
         @NotBlank @Size(max = 64) String draftKey,

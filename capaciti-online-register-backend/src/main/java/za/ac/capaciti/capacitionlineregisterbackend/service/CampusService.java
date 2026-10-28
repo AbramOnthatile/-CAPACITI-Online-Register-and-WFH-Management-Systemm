@@ -18,6 +18,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.exception.ConflictException;
 import za.ac.capaciti.capacitionlineregisterbackend.exception.ResourceNotFoundException;
 import za.ac.capaciti.capacitionlineregisterbackend.mappers.CampusMapper;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.CampusHubRepository;
+import za.ac.capaciti.capacitionlineregisterbackend.repository.UserRepository;
 
 @Service
 public class CampusService implements ICampusService {
@@ -26,16 +27,19 @@ public class CampusService implements ICampusService {
     private final CampusMapper campusMapper;
     private final IpWhitelistService ipWhitelistService;
     private final IAuditService auditService;
+    private final UserRepository userRepository;
 
     public CampusService(
             CampusHubRepository campusHubRepository,
             CampusMapper campusMapper,
             IpWhitelistService ipWhitelistService,
-            IAuditService auditService) {
+            IAuditService auditService,
+            UserRepository userRepository) {
         this.campusHubRepository = campusHubRepository;
         this.campusMapper = campusMapper;
         this.ipWhitelistService = ipWhitelistService;
         this.auditService = auditService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -47,7 +51,8 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto update(UUID id, UpdateCampusRequest request, User actor) {
+    public CampusDto update(UUID id, UpdateCampusRequest request, String actorEmail) {
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
         CampusHub campusHub = findCampus(id);
         campusHubRepository.findByName(request.name())
                 .filter(existing -> !id.equals(existing.getId()))
@@ -69,7 +74,8 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto addCurrentIp(UUID id, HttpServletRequest request, User actor) {
+    public CampusDto addCurrentIp(UUID id, HttpServletRequest request, String actorEmail) {
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
         CampusHub campusHub = findCampus(id);
         String clientIp = ipWhitelistService.extractClientIp(request);
         String cidr = ipWhitelistService.toCidr(clientIp);
@@ -94,7 +100,8 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto removeCidr(UUID id, String cidr, User actor) {
+    public CampusDto removeCidr(UUID id, String cidr, String actorEmail) {
+        User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
         CampusHub campusHub = findCampus(id);
         List<String> cidrs = campusHub.getWhitelistedCidrs();
         if (cidrs == null || !cidrs.remove(cidr)) {

@@ -94,6 +94,16 @@ public class UserService implements IUserService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<UserDto> listForChampion(String championEmail, Boolean active, String text, Pageable pageable) {
+        User champion = userRepository.findByEmailIgnoreCase(championEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + championEmail));
+        String query = text == null || text.isBlank() ? null : text.trim();
+        return userRepository.searchCandidatesOfChampion(champion.getId(), active, query, pageable)
+                .map(userMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public UserDto getById(UUID id) {
         return userMapper.toDto(findUser(id));
     }

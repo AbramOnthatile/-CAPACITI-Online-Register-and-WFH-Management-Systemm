@@ -1,6 +1,5 @@
 import {
   ArrivalStatus,
-  DepartureStatus,
   PromptStage,
   PromptStatus,
   TicketStatus,
@@ -20,7 +19,7 @@ import {
 export const mockUsers: User[] = [
   {
     id: 'user-candidate-1',
-    email: 'candidate@capaciti.test',
+    email: 'candidate1@example.com',
     fullName: 'Aphiwe Ndlovu',
     role: UserRole.CANDIDATE,
     defaultMode: WorkMode.ON_SITE,
@@ -32,7 +31,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-candidate-2',
-    email: 'mpho@capaciti.test',
+    email: 'candidate2@example.com',
     fullName: 'Mpho Mokoena',
     role: UserRole.CANDIDATE,
     defaultMode: WorkMode.WFH,
@@ -44,7 +43,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-champion-1',
-    email: 'champion@capaciti.test',
+    email: 'champ@example.com',
     fullName: 'Lerato Dlamini',
     role: UserRole.TECH_CHAMP,
     defaultMode: WorkMode.ON_SITE,
@@ -56,7 +55,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-admin-1',
-    email: 'admin@capaciti.test',
+    email: 'admin@example.com',
     fullName: 'Musa Zulu',
     role: UserRole.ADMIN,
     defaultMode: WorkMode.ON_SITE,

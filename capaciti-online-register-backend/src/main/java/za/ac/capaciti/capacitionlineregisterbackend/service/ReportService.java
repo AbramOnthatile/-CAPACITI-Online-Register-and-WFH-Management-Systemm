@@ -21,7 +21,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.report.DailyTren
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.report.OverviewReportDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.report.PromptStageStatDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.report.WfhSummaryDto;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.ArrivalStatus;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.DepartureStatus;
 import za.ac.capaciti.capacitionlineregisterbackend.enums.PromptStage;

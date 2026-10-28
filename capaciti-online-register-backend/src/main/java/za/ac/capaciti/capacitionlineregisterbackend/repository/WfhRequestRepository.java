@@ -12,17 +12,17 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.WfhRequest;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus;
 
 public interface WfhRequestRepository extends JpaRepository<WfhRequest, UUID> {
 
-    @Query("select w from WfhRequest w where w.status = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus.APPROVED and w.startDate <= :date and w.endDate >= :date and w.user = :user")
+    @Query("select w from WfhRequest w where w.status = za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus.APPROVED and w.startDate <= :date and w.endDate >= :date and w.user = :user")
     List<WfhRequest> findApprovedCoveringForUser(@Param("user") User user, @Param("date") LocalDate date);
 
-    @Query("select w from WfhRequest w join fetch w.user where w.status = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus.APPROVED and w.startDate <= :date and w.endDate >= :date")
+    @Query("select w from WfhRequest w join fetch w.user where w.status = za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus.APPROVED and w.startDate <= :date and w.endDate >= :date")
     List<WfhRequest> findApprovedCovering(@Param("date") LocalDate date);
 
-    @Query("select case when count(w) > 0 then true else false end from WfhRequest w where w.user = :user and w.startDate <= :end and w.endDate >= :start and (w.status = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus.PENDING or w.status = za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WfhStatus.APPROVED)")
+    @Query("select case when count(w) > 0 then true else false end from WfhRequest w where w.user = :user and w.startDate <= :end and w.endDate >= :start and (w.status = za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus.PENDING or w.status = za.ac.capaciti.capacitionlineregisterbackend.enums.WfhStatus.APPROVED)")
     boolean existsOverlapping(@Param("user") User user, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
     Page<WfhRequest> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);

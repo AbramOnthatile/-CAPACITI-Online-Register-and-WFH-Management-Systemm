@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,13 +60,13 @@ public class SupabaseStorageClient {
                     .block(REQUEST_TIMEOUT);
 
             JsonNode signedPathNode = response == null ? null : response.get("signedURL");
-            if (signedPathNode == null || !signedPathNode.isTextual() || signedPathNode.asText().isBlank()) {
+            if (signedPathNode == null || !signedPathNode.isString() || signedPathNode.asString().isBlank()) {
                 throw new IllegalStateException("Supabase response does not contain a signed path");
             }
 
             return Optional.of(supabaseUrl.replaceAll("/+$", "")
                     + "/storage/v1"
-                    + signedPathNode.asText());
+                    + signedPathNode.asString());
         } catch (Exception exception) {
             String httpStatus = exception instanceof WebClientResponseException responseException
                     ? String.valueOf(responseException.getStatusCode().value())

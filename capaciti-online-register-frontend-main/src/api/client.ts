@@ -52,7 +52,7 @@ async function readResponseBody(response: Response): Promise<unknown> {
   }
 }
 
-function createApiError(status: number, body: unknown, statusText: string): ApiError {
+function createApiError(status: number, body: unknown, _statusText: string): ApiError {
   let code = 'HTTP_ERROR';
   let message = '';
   let fieldErrors: Record<string, string> = {};

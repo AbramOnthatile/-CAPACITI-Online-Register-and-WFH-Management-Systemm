@@ -20,6 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import za.ac.capaciti.capacitionlineregisterbackend.client.TeamsWebhookClient;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.QualityContext;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.SupportTicket;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.WfhRequest;
@@ -28,9 +30,9 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.CreateTic
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.ResolveTicketRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.TicketActionResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.ticket.TicketDto;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketStatus;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.TicketType;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.WorkMode;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketStatus;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.TicketType;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 import za.ac.capaciti.capacitionlineregisterbackend.exception.BadRequestException;
 import za.ac.capaciti.capacitionlineregisterbackend.exception.ConflictException;
 import za.ac.capaciti.capacitionlineregisterbackend.mappers.TicketMapper;
@@ -58,6 +60,9 @@ class TicketServiceTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private TeamsWebhookClient teamsWebhookClient;
+
     @InjectMocks
     private TicketService service;
 
@@ -66,9 +71,9 @@ class TicketServiceTest {
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("candidate@test.com");
-        when(userRepository.findByEmail("candidate@test.com")).thenReturn(Optional.of(user));
-        when(wfhRequestRepository.findApprovedCoveringForUser(user, any())).thenReturn(List.of(new WfhRequest()));
-        when(qualityGateService.check(eq(user), eq("TICKET"), eq("draft-1"), eq("issue"))).thenReturn(new QualityResult(true, false, "ok"));
+        when(userRepository.findByEmailIgnoreCase("candidate@test.com")).thenReturn(Optional.of(user));
+        when(wfhRequestRepository.findApprovedCoveringForUser(eq(user), any())).thenReturn(List.of(new WfhRequest()));
+        when(qualityGateService.check(eq(user), eq(QualityContext.TICKET), eq("draft-1"), eq("issue"))).thenReturn(new QualityResult(true, false, "ok"));
         when(supportTicketRepository.save(any(SupportTicket.class))).thenAnswer(invocation -> {
             SupportTicket saved = invocation.getArgument(0);
             saved.setId(UUID.randomUUID());
@@ -84,8 +89,8 @@ class TicketServiceTest {
     void invalidAttachmentLinkThrowsBadRequest() {
         User user = new User();
         user.setEmail("candidate@test.com");
-        when(userRepository.findByEmail("candidate@test.com")).thenReturn(Optional.of(user));
-        CreateTicketRequest request = new CreateTicketRequest("draft-2", TicketType.ACCOUNT, "title", "issue", "ftp://example.com/file");
+        when(userRepository.findByEmailIgnoreCase("candidate@test.com")).thenReturn(Optional.of(user));
+        CreateTicketRequest request = new CreateTicketRequest("draft-2", TicketType.IT_ISSUE, "title", "issue", "ftp://example.com/file");
         assertThrows(BadRequestException.class, () -> service.create("candidate@test.com", request));
     }
 
@@ -110,7 +115,7 @@ class TicketServiceTest {
     void resolveOnResolvedTicketThrowsConflict() {
         User actor = new User();
         actor.setEmail("champion@test.com");
-        when(userRepository.findByEmail("champion@test.com")).thenReturn(Optional.of(actor));
+        when(userRepository.findByEmailIgnoreCase("champion@test.com")).thenReturn(Optional.of(actor));
         SupportTicket ticket = new SupportTicket();
         ticket.setId(UUID.randomUUID());
         ticket.setStatus(TicketStatus.RESOLVED);

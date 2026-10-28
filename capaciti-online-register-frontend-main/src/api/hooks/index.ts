@@ -5,6 +5,7 @@ export { useAttendanceApi, attendanceKeys, type AttendanceQueryParams } from './
 export { useWfhRequestsApi, wfhKeys, type WfhQueryParams } from './wfh';
 export { usePromptsApi, promptKeys, getPromptCollection } from './prompts';
 export { useTicketsApi, ticketKeys, type TicketsQueryParams } from './tickets';
+export { useNotificationsApi, notificationKeys } from './notifications';
 export { useDashboardApi, dashboardKeys } from './dashboard';
 export { useReportsApi, reportKeys } from './reports';
 export { useAuditApi, type AuditQueryParams } from './audit';

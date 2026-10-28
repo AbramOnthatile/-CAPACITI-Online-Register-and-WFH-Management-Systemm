@@ -1,3 +1,4 @@
+import { AssessmentStatus, AssessmentType } from '../api/types';
 import type {
   AssessmentDetailDto,
   AssessmentSummaryDto,
@@ -20,8 +21,8 @@ const assessmentSeeds: Omit<AssessmentDetailDto, 'entries' | 'attendanceSuggesti
   {
     id: 'assessment-week-2026-10-19',
     title: 'Weekly Scorecard — 19 October',
-    type: 'WEEKLY',
-    status: 'SUBMITTED',
+    type: AssessmentType.WEEKLY,
+    status: AssessmentStatus.SUBMITTED,
     assessmentDate: '2026-10-23',
     periodStart: '2026-10-19',
     periodEnd: '2026-10-23',
@@ -31,8 +32,8 @@ const assessmentSeeds: Omit<AssessmentDetailDto, 'entries' | 'attendanceSuggesti
   {
     id: 'assessment-project-alpha',
     title: 'Project Alpha Delivery Review',
-    type: 'PROJECT',
-    status: 'DRAFT',
+    type: AssessmentType.PROJECT,
+    status: AssessmentStatus.DRAFT,
     assessmentDate: '2026-10-30',
     periodStart: '2026-10-19',
     periodEnd: '2026-10-30',
@@ -42,8 +43,8 @@ const assessmentSeeds: Omit<AssessmentDetailDto, 'entries' | 'attendanceSuggesti
   {
     id: 'assessment-week-2026-10-12',
     title: 'Weekly Scorecard — 12 October',
-    type: 'WEEKLY',
-    status: 'SUBMITTED',
+    type: AssessmentType.WEEKLY,
+    status: AssessmentStatus.SUBMITTED,
     assessmentDate: '2026-10-16',
     periodStart: '2026-10-12',
     periodEnd: '2026-10-16',
@@ -53,8 +54,8 @@ const assessmentSeeds: Omit<AssessmentDetailDto, 'entries' | 'attendanceSuggesti
   {
     id: 'assessment-project-beta',
     title: 'Project Beta Checkpoint',
-    type: 'PROJECT',
-    status: 'DRAFT',
+    type: AssessmentType.PROJECT,
+    status: AssessmentStatus.DRAFT,
     assessmentDate: '2026-11-06',
     periodStart: '2026-10-26',
     periodEnd: '2026-11-06',
@@ -64,8 +65,8 @@ const assessmentSeeds: Omit<AssessmentDetailDto, 'entries' | 'attendanceSuggesti
   {
     id: 'assessment-week-2026-10-05',
     title: 'Weekly Scorecard — 5 October',
-    type: 'WEEKLY',
-    status: 'SUBMITTED',
+    type: AssessmentType.WEEKLY,
+    status: AssessmentStatus.SUBMITTED,
     assessmentDate: '2026-10-09',
     periodStart: '2026-10-05',
     periodEnd: '2026-10-09',

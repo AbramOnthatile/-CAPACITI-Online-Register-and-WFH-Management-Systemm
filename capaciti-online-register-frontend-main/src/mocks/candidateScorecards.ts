@@ -1,10 +1,11 @@
+import { AssessmentType } from '../api/types';
 import type { MyScorecardDto } from '../api/scorecardTypes';
 
 const myScorecards: MyScorecardDto[] = [
   {
     assessmentId: 'my-week-2026-10-23',
     title: 'Weekly Scorecard — 19 October',
-    type: 'WEEKLY',
+    type: AssessmentType.WEEKLY,
     assessmentDate: '2026-10-23',
     scores: { attendance: 5, communication: 4, accountability: 4, creativity: 3, delivery: 4, techSkills: 4 },
     overallPercent: 80,
@@ -16,7 +17,7 @@ const myScorecards: MyScorecardDto[] = [
   {
     assessmentId: 'my-week-2026-10-16',
     title: 'Weekly Scorecard — 12 October',
-    type: 'WEEKLY',
+    type: AssessmentType.WEEKLY,
     assessmentDate: '2026-10-16',
     scores: { attendance: 4, communication: 4, accountability: 3, creativity: 4, delivery: 3, techSkills: 4 },
     overallPercent: 73,
@@ -28,7 +29,7 @@ const myScorecards: MyScorecardDto[] = [
   {
     assessmentId: 'my-project-2026-10-09',
     title: 'Project Foundations Review',
-    type: 'PROJECT',
+    type: AssessmentType.PROJECT,
     assessmentDate: '2026-10-09',
     scores: { attendance: 4, communication: 3, accountability: 4, creativity: 4, delivery: 3, techSkills: 3 },
     overallPercent: 70,

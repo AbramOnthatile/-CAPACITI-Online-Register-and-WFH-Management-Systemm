@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,13 +36,20 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Tech Champions may list users, but only their own assigned candidates.
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TECH_CHAMP')")
     public ResponseEntity<Page<UserDto>> list(
             @RequestParam(required = false) UserRole role,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String text,
-            Pageable pageable) {
-        return ResponseEntity.ok(userService.list(role, active, text, pageable));
+            Pageable pageable,
+            Authentication authentication) {
+        boolean champion = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_TECH_CHAMP".equals(authority.getAuthority()));
+        return ResponseEntity.ok(champion
+                ? userService.listForChampion(authentication.getName(), active, text, pageable)
+                : userService.list(role, active, text, pageable));
     }
 
     @PostMapping
