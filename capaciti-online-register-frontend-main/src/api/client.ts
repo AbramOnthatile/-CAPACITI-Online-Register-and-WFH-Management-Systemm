@@ -66,7 +66,11 @@ function createApiError(status: number, body: unknown, _statusText: string): Api
     return new ApiError(status, code, message || 'Invalid email or password.', fieldErrors);
   }
   if (status === 401) return new ApiError(status, code, 'Your session has expired. Please sign in again.', fieldErrors);
-  if (status === 403) return new ApiError(status, code, 'You do not have permission to perform this action.', fieldErrors);
+  // Business rules (location, WFH approval, campus) explain themselves; only a plain role refusal gets the generic text.
+  if (status === 403) {
+    const explained = code !== 'FORBIDDEN' && code !== 'HTTP_ERROR' && message;
+    return new ApiError(status, code, explained || 'You do not have permission to perform this action.', fieldErrors);
+  }
   if (status === 404) return new ApiError(status, code, 'The requested item could not be found.', fieldErrors);
   if (status === 409) {
     const conflictMessages: Record<string, string> = {

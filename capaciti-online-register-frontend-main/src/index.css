@@ -118,7 +118,7 @@ textarea {
     @apply mx-auto w-full max-w-3xl space-y-5 sm:space-y-6;
   }
   .page-header {
-    @apply flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between;
+    @apply flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between;
   }
   .eyebrow {
     @apply text-[11px] font-extrabold uppercase tracking-[0.16em] text-primary-600;
@@ -303,10 +303,10 @@ textarea {
     @apply border-b border-slate-100 bg-slate-50/70;
   }
   .table th {
-    @apply whitespace-nowrap px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 first:pl-5 last:pr-5;
+    @apply whitespace-nowrap px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 first:pl-5 last:pr-5 xl:px-4;
   }
   .table td {
-    @apply px-4 py-3 align-middle first:pl-5 last:pr-5;
+    @apply px-3 py-3 align-middle first:pl-5 last:pr-5 xl:px-4;
   }
   .table tbody {
     @apply divide-y divide-slate-100;

@@ -5,7 +5,6 @@ import {
   ScrollText,
   FileBarChart,
   MapPin,
-  Sliders,
 } from 'lucide-react';
 import AppShell from './AppShell';
 
@@ -33,7 +32,6 @@ export const AdminLayout = () => (
     navItems={navItems}
     homePath="/admin/dashboard"
     accent="navy"
-    workspace={{ label: 'Administration', icon: Sliders, detail: 'Users, escalations and audit' }}
     getPageInfo={getPageInfo}
   />
 );

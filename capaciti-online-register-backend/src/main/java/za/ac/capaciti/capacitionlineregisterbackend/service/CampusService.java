@@ -28,18 +28,21 @@ public class CampusService implements ICampusService {
     private final IpWhitelistService ipWhitelistService;
     private final IAuditService auditService;
     private final UserRepository userRepository;
+    private final PasswordConfirmationService passwordConfirmation;
 
     public CampusService(
             CampusHubRepository campusHubRepository,
             CampusMapper campusMapper,
             IpWhitelistService ipWhitelistService,
             IAuditService auditService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            PasswordConfirmationService passwordConfirmation) {
         this.campusHubRepository = campusHubRepository;
         this.campusMapper = campusMapper;
         this.ipWhitelistService = ipWhitelistService;
         this.auditService = auditService;
         this.userRepository = userRepository;
+        this.passwordConfirmation = passwordConfirmation;
     }
 
     @Override
@@ -51,8 +54,9 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto update(UUID id, UpdateCampusRequest request, String actorEmail) {
+    public CampusDto update(UUID id, UpdateCampusRequest request, String actorEmail, String confirmPassword) {
         User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
+        passwordConfirmation.confirm(actor, confirmPassword);
         CampusHub campusHub = findCampus(id);
         campusHubRepository.findByName(request.name())
                 .filter(existing -> !id.equals(existing.getId()))
@@ -74,8 +78,9 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto addCurrentIp(UUID id, HttpServletRequest request, String actorEmail) {
+    public CampusDto addCurrentIp(UUID id, HttpServletRequest request, String actorEmail, String confirmPassword) {
         User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
+        passwordConfirmation.confirm(actor, confirmPassword);
         CampusHub campusHub = findCampus(id);
         String clientIp = ipWhitelistService.extractClientIp(request);
         String cidr = ipWhitelistService.toCidr(clientIp);
@@ -100,8 +105,9 @@ public class CampusService implements ICampusService {
 
     @Override
     @Transactional
-    public CampusDto removeCidr(UUID id, String cidr, String actorEmail) {
+    public CampusDto removeCidr(UUID id, String cidr, String actorEmail, String confirmPassword) {
         User actor = userRepository.findByEmailIgnoreCase(actorEmail).orElse(null);
+        passwordConfirmation.confirm(actor, confirmPassword);
         CampusHub campusHub = findCampus(id);
         List<String> cidrs = campusHub.getWhitelistedCidrs();
         if (cidrs == null || !cidrs.remove(cidr)) {

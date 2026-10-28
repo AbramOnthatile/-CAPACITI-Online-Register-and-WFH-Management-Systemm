@@ -54,7 +54,7 @@ const SidebarClock = () => {
  * - phones: a slide-in drawer opened from a slim brand strip (staff roles) or,
  *   when `mobileTabs` is given, an app-style bottom tab bar (candidate experience).
  */
-const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace, getPageInfo, mobileTabs }) => {
+const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', getPageInfo, mobileTabs }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -120,16 +120,6 @@ const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace,
         </div>
 
         <SidebarClock />
-
-        {workspace && (
-          <div className="mx-3 mt-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-            <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-navy">
-              {workspace.icon && <workspace.icon className="h-3.5 w-3.5 text-salmon" />}
-              {workspace.label}
-            </p>
-            {workspace.detail && <p className="mt-1 truncate text-xs text-slate-500">{workspace.detail}</p>}
-          </div>
-        )}
 
         <nav className="mt-4 flex-1 space-y-1 overflow-y-auto px-3 pb-3" aria-label="Main">
           {navItems.map(({ label, to, icon: Icon, end, showsUnread }) => {
@@ -213,9 +203,15 @@ const AppShell = ({ navItems, homePath, profilePath, accent = 'navy', workspace,
                     aria-current={active ? 'page' : undefined}
                     className={`relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-bold transition-colors ${active ? 'text-primary-600' : 'text-slate-400 hover:text-navy'}`}
                   >
-                    <span className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors ${active ? 'bg-primary-600/10' : ''}`}>
-                      <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
-                    </span>
+                    {tab.primary ? (
+                      <span className={`-mt-6 flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg ring-4 ring-white transition-colors ${active ? 'bg-primary-600' : 'bg-navy'}`}>
+                        <Icon className="h-5 w-5" strokeWidth={2.4} />
+                      </span>
+                    ) : (
+                      <span className={`flex h-8 w-12 items-center justify-center rounded-full transition-colors ${active ? 'bg-primary-600/10' : ''}`}>
+                        <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+                      </span>
+                    )}
                     {tab.label}
                     {tab.badge && <span className="absolute right-[calc(50%-1.1rem)] top-2.5 h-2 w-2 rounded-full bg-salmon ring-2 ring-white" />}
                   </NavLink>

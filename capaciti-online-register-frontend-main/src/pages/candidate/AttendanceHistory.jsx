@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Download, CalendarDays, ChevronRight, History } from 'lucide-react';
+import { CalendarDays, ChevronRight, History } from 'lucide-react';
 import { ArrivalStatus, DepartureStatus } from '../../api/types';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
@@ -9,6 +10,8 @@ import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import { downloadCsv } from '../../lib/downloadCsv';
+import { downloadPdf } from '../../lib/downloadPdf';
+import ExportButtons from '../../components/common/ExportButtons';
 import { getStatusMetadata } from '../../lib/status';
 import { Skeleton } from '../../components/common/RequestState';
 import { formatSastDate, formatSastTime } from '../../lib/time';
@@ -47,6 +50,7 @@ const EntryDetails = ({ entry }) => (
 
 const AttendanceHistory = () => {
   const { attendance, attendanceLoading, attendanceError, refreshAttendance } = useApp();
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [sheetEntry, setSheetEntry] = useState(null);
@@ -54,17 +58,34 @@ const AttendanceHistory = () => {
   const selected = filtered.find((entry) => entry.id === selectedEntry?.id) ?? filtered[0] ?? null;
   const dates = attendance.map((record) => record.attendanceDate).sort();
 
-  const exportCsv = () => downloadCsv('attendance-timesheet.csv', filtered.map((entry) => ({
-    date: entry.attendanceDate,
-    workMode: entry.workMode,
-    arrival: entry.arrivalStatus,
-    clockIn: formatTime(entry.clockInAt),
-    teaBreaks: breakTimes(entry, 'TEA'),
-    lunchBreaks: breakTimes(entry, 'LUNCH'),
-    clockOut: formatTime(entry.clockOutAt),
-    departure: entry.departureStatus ?? '',
-    duration: duration(entry),
-  })), ['date', 'workMode', 'arrival', 'clockIn', 'teaBreaks', 'lunchBreaks', 'clockOut', 'departure', 'duration']);
+  // One column list for both exports, with readable labels.
+  const label = (status) => (status ? getStatusMetadata(status)?.label ?? status : '');
+  const columns = [
+    ['Date', (entry) => formatSastDate(entry.attendanceDate)],
+    ['Work mode', (entry) => label(entry.workMode)],
+    ['Arrival', (entry) => label(entry.arrivalStatus)],
+    ['Clock in', (entry) => formatTime(entry.clockInAt)],
+    ['Tea breaks', (entry) => breakTimes(entry, 'TEA')],
+    ['Lunch breaks', (entry) => breakTimes(entry, 'LUNCH')],
+    ['Clock out', (entry) => formatTime(entry.clockOutAt)],
+    ['Departure', (entry) => label(entry.departureStatus)],
+    ['Duration', (entry) => duration(entry)],
+  ];
+  const exportCsv = () => downloadCsv('attendance-timesheet.csv',
+    filtered.map((entry) => Object.fromEntries(columns.map(([header, value]) => [header, value(entry)]))),
+    columns.map(([header]) => header));
+  const exportPdf = () => downloadPdf({
+    filename: 'attendance-timesheet.pdf',
+    title: 'Attendance timesheet',
+    subtitle: [user?.fullName, dates.length ? `${formatSastDate(dates[0])} – ${formatSastDate(dates.at(-1))}` : ''].filter(Boolean).join(' · '),
+    summary: [
+      { label: 'Days recorded', value: filtered.length },
+      { label: 'On time', value: filtered.filter((entry) => entry.arrivalStatus === 'ON_TIME').length },
+      { label: 'Late', value: filtered.filter((entry) => entry.arrivalStatus?.startsWith('LATE')).length },
+      { label: 'Working from home', value: filtered.filter((entry) => entry.workMode === 'WFH').length },
+    ],
+    tables: [{ heading: 'Timesheet', columns: columns.map(([header]) => header), rows: filtered.map((entry) => columns.map(([, value]) => value(entry))) }],
+  });
 
   const emptyMessage = attendanceLoading ? 'Loading attendance records...' : 'No attendance records match the selected filter.';
 
@@ -75,7 +96,7 @@ const AttendanceHistory = () => {
         title="Attendance history"
         backTo="/candidate/attendance"
         backLabel="Back to attendance"
-        actions={<button type="button" onClick={exportCsv} className="btn btn-secondary"><Download className="h-4 w-4" />Export timesheet</button>}
+        actions={<ExportButtons onPdf={exportPdf} onCsv={exportCsv} disabled={!filtered.length} />}
       />
 
       <div className="space-y-3">
@@ -96,8 +117,8 @@ const AttendanceHistory = () => {
       {canRetryError(attendanceError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshAttendance()}>Retry</button>}
       {attendanceLoading && <Skeleton label="Loading attendance history" />}
 
-      {/* Phones: tappable record cards */}
-      <ul className="list md:hidden">
+      {/* Phones & tablets: tappable record cards */}
+      <ul className="list lg:hidden">
         {filtered.map((entry) => (
           <li key={entry.id}>
             <button type="button" onClick={() => setSheetEntry(entry)} className="surface surface-interactive flex w-full items-center gap-3 p-4 text-left">
@@ -119,20 +140,20 @@ const AttendanceHistory = () => {
         {filtered.length === 0 && <li><EmptyState icon={History} description={emptyMessage} /></li>}
       </ul>
 
-      {/* Tablet & desktop: table + detail panel */}
-      <div className="hidden gap-6 md:grid lg:grid-cols-12">
-        <div className="surface overflow-hidden lg:col-span-8">
+      {/* Desktop: table, with the detail panel beside it on wide screens (breaks then show in the panel) */}
+      <div className="hidden gap-6 lg:grid xl:grid-cols-12">
+        <div className="surface overflow-hidden xl:col-span-8">
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>Date</th><th>Arrival</th><th>Clock in</th><th>Tea</th><th>Lunch</th><th>Clock out</th><th className="text-right">Duration</th></tr></thead>
+              <thead><tr><th>Date</th><th>Arrival</th><th>Clock in</th><th className="xl:hidden 2xl:table-cell">Tea</th><th className="xl:hidden 2xl:table-cell">Lunch</th><th>Clock out</th><th className="text-right">Duration</th></tr></thead>
               <tbody>
                 {filtered.map((entry) => (
                   <tr key={entry.id} onClick={() => setSelectedEntry(entry)} aria-selected={selected?.id === entry.id} className={`cursor-pointer ${selected?.id === entry.id ? 'bg-primary-50/70' : ''}`}>
                     <td className="font-mono font-semibold tabular-nums text-navy">{formatSastDate(entry.attendanceDate)}</td>
                     <td><div className="flex flex-col items-start gap-1"><StatusBadge status={entry.arrivalStatus} />{entry.departureStatus && <StatusBadge status={entry.departureStatus} />}</div></td>
                     <td className="font-mono tabular-nums text-slate-600">{formatTime(entry.clockInAt)}</td>
-                    <td className="font-mono text-xs text-slate-600">{breakTimes(entry, 'TEA')}</td>
-                    <td className="font-mono text-xs text-slate-600">{breakTimes(entry, 'LUNCH')}</td>
+                    <td className="font-mono text-xs text-slate-600 xl:hidden 2xl:table-cell">{breakTimes(entry, 'TEA')}</td>
+                    <td className="font-mono text-xs text-slate-600 xl:hidden 2xl:table-cell">{breakTimes(entry, 'LUNCH')}</td>
                     <td className="font-mono tabular-nums text-slate-600">{formatTime(entry.clockOutAt)}</td>
                     <td className="text-right font-mono font-bold tabular-nums text-navy">{duration(entry)}</td>
                   </tr>
@@ -142,7 +163,7 @@ const AttendanceHistory = () => {
             </table>
           </div>
         </div>
-        <div className="lg:col-span-4">
+        <div className="xl:col-span-4">
           <Card title="Entry details" subtitle={selected ? formatSastDate(selected.attendanceDate) : undefined}>
             {selected ? <EntryDetails entry={selected} /> : <p className="meta">{attendanceLoading ? 'Loading records...' : 'Select an attendance record to view details.'}</p>}
           </Card>

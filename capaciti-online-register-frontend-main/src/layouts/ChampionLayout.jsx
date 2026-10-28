@@ -5,7 +5,6 @@ import {
   FileText,
   CheckCircle2,
   BarChart3,
-  ShieldCheck,
   Megaphone,
   ClipboardList,
 } from 'lucide-react';
@@ -39,7 +38,6 @@ export const ChampionLayout = () => (
     navItems={navItems}
     homePath="/champion/dashboard"
     accent="navy"
-    workspace={{ label: 'Tech Champion', icon: ShieldCheck, detail: 'Managing your assigned cohort' }}
     getPageInfo={getPageInfo}
   />
 );

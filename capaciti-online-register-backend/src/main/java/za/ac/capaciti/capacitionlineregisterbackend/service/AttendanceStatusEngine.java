@@ -29,6 +29,14 @@ public class AttendanceStatusEngine {
         return excused ? ArrivalStatus.LATE_EXCUSED : ArrivalStatus.LATE_UNEXCUSED;
     }
 
+    // Presentation accounts may clock in at any hour; before 08:45 counts as on time.
+    public ArrivalStatus arrivalStatusAtAnyHour(Instant clockIn) {
+        if (TimeUtil.toLocalTime(clockIn).isBefore(CLOCK_IN_OPENS)) {
+            return ArrivalStatus.ON_TIME;
+        }
+        return arrivalStatusFor(clockIn, false);
+    }
+
     public DepartureStatus departureStatusFor(Instant clockOut) {
         LocalTime localTime = TimeUtil.toLocalTime(clockOut);
         if (localTime.isBefore(CLOCK_OUT_OPENS)) {

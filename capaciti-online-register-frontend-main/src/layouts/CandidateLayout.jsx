@@ -24,10 +24,11 @@ const navItems = [
   { label: 'Support', to: '/candidate/support', icon: LifeBuoy },
 ];
 
+// Home sits in the middle as the main action.
 const mobileTabs = [
-  { label: 'Home', to: '/candidate/dashboard', icon: LayoutDashboard },
   { label: 'Attendance', to: '/candidate/attendance', icon: Clock3 },
   { label: 'WFH', to: '/candidate/wfh', icon: Home },
+  { label: 'Home', to: '/candidate/dashboard', icon: LayoutDashboard, primary: true },
   { label: 'Check-ins', to: '/candidate/progress', icon: CheckSquare },
   {
     label: 'More',

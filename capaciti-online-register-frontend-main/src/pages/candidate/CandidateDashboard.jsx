@@ -67,9 +67,11 @@ const CandidateDashboard = () => {
   const dateString = serverNow && !Number.isNaN(serverNow.getTime())
     ? formatSastDate(serverNow.toISOString(), { weekday: 'long', day: 'numeric', month: 'long' })
     : 'Waiting for server time';
-  const formatElapsed = (start) => {
-    if (!serverNow || Number.isNaN(serverNow.getTime())) return '--:--:--';
-    const elapsed = Math.max(0, Math.floor((serverNow.getTime() - Date.parse(start)) / 1000));
+  // Time since clock-in, or the finished day's total once clocked out.
+  const formatElapsed = (start, end) => {
+    const until = end ? Date.parse(end) : serverNow?.getTime();
+    if (until === undefined || Number.isNaN(until)) return '--:--:--';
+    const elapsed = Math.max(0, Math.floor((until - Date.parse(start)) / 1000));
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
     const seconds = elapsed % 60;
@@ -225,7 +227,7 @@ const CandidateDashboard = () => {
             <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-full border-[10px] border-primary-600/10 bg-primary-600/5 sm:h-48 sm:w-48">
               <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full border-4 border-primary-600/20 bg-white shadow-inner sm:h-40 sm:w-40">
                 <Clock className="mb-1.5 h-5 w-5 text-primary-600" />
-                <p className="font-mono text-xl font-extrabold tabular-nums text-navy sm:text-2xl">{working ? formatElapsed(attendanceToday.clockInAt) : '--:--:--'}</p>
+                <p className="font-mono text-xl font-extrabold tabular-nums text-navy sm:text-2xl">{working ? formatElapsed(attendanceToday.clockInAt) : attendanceToday?.clockOutAt ? formatElapsed(attendanceToday.clockInAt, attendanceToday.clockOutAt) : '--:--:--'}</p>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Time recorded</p>
               </div>
             </div>

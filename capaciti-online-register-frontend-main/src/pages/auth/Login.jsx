@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Sparkles, Shield, GraduationCap, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, WfhStatus } from '../../api/types';
-import StatusBadge from '../../components/common/StatusBadge';
+import { UserRole } from '../../api/types';
 import { demoOnly } from '../../mocks/demoOnly';
 import { useMocks } from '../../api/mockMode';
 import { ApiError, getFieldError, getUserErrorMessage } from '../../api/client';
@@ -142,11 +141,9 @@ const Login = () => {
                       </div>
                       <div className="min-w-0 truncate">
                         <p className="font-bold leading-tight truncate">{acc.name}</p>
-                        <p className="text-[10px] text-slate-300 truncate">{acc.title} · {acc.email}</p>
+                        <p className="text-[10px] text-slate-300 truncate">{acc.email}</p>
                       </div>
                     </div>
-                    {/* MOCK-ONLY: not in backend */}
-                    <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
                   </button>
                 );
               })}

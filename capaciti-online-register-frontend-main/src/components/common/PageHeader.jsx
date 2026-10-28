@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 
 /**
  * Standard page heading used by every screen: optional back link, eyebrow,
- * title, description and a right-aligned action area that stacks on mobile.
+ * title, description and a right-aligned action area that sits under the title until there is room beside it (lg).
  */
 const PageHeader = ({ eyebrow, title, description, actions, backTo, backLabel = 'Back', eyebrowClassName = '' }) => (
   <header className="page-header">
@@ -19,7 +19,7 @@ const PageHeader = ({ eyebrow, title, description, actions, backTo, backLabel = 
         {description && <p className="page-subtitle mt-1">{description}</p>}
       </div>
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end [&>*]:flex-1 sm:[&>*]:flex-none">{actions}</div>}
+    {actions && <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end [&>*]:flex-1 sm:[&>*]:flex-none">{actions}</div>}
   </header>
 );
 

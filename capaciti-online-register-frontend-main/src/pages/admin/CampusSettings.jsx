@@ -7,8 +7,10 @@ import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import EmptyState from '../../components/common/EmptyState';
 import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import ConfirmPasswordModal from '../../components/common/ConfirmPasswordModal';
 
 // On-site clock-in passes when the device is within the radius OR on a whitelisted network.
+// Every change here is confirmed with the admin's password first.
 const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => {
   const [form, setForm] = useState({
     name: campus.name,
@@ -20,16 +22,27 @@ const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => 
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [feedback, setFeedback] = useState('');
+  const [pending, setPending] = useState(null);
 
-  const run = async (key, action, success) => {
-    setBusy(key);
+  // Opens the password dialog; the change runs only once the password is confirmed.
+  const confirmThen = (key, label, action, success) => {
     setError('');
     setFeedback('');
     setFieldErrors({});
+    setPending({ key, label, action, success });
+  };
+
+  const runConfirmed = async (password) => {
+    const { key, action, success } = pending;
+    setBusy(key);
     try {
-      await action();
+      await action(password);
+      setPending(null);
       setFeedback(success);
     } catch (requestError) {
+      // A wrong password stays in the dialog; anything else closes it and shows on the card.
+      if (requestError instanceof ApiError && requestError.code?.startsWith('PASSWORD_CONFIRMATION')) throw requestError;
+      setPending(null);
       setError(getUserErrorMessage(requestError, 'The campus could not be updated.'));
       if (requestError instanceof ApiError) setFieldErrors(requestError.fieldErrors);
     } finally {
@@ -39,15 +52,16 @@ const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => 
 
   const save = (event) => {
     event.preventDefault();
-    void run('save', () => update(campus.id, {
+    confirmThen('save', 'Changing the campus location or radius', (password) => update(campus.id, {
       name: form.name.trim(),
       latitude: Number(form.latitude),
       longitude: Number(form.longitude),
       radiusM: Number(form.radiusM),
-    }), 'Campus details saved.');
+    }, password), 'Campus details saved.');
   };
 
   return (
+    <>
     <Card title={campus.name} subtitle="Location and network used to verify on-site clock-ins">
       <div className="space-y-5">
         <Alert>{error}</Alert>
@@ -100,7 +114,7 @@ const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => 
               type="button"
               className="btn btn-secondary w-full sm:w-auto"
               disabled={Boolean(busy)}
-              onClick={() => void run('add', () => whitelistCurrentIp(campus.id), 'This network was added.')}
+              onClick={() => confirmThen('add', 'Adding a trusted network', (password) => whitelistCurrentIp(campus.id, password), 'This network was added.')}
             >
               <Plus className="h-4 w-4" />
               {busy === 'add' ? 'Adding...' : 'Add the network I am on'}
@@ -118,7 +132,7 @@ const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => 
                     type="button"
                     className="btn btn-ghost btn-sm h-8 w-8 p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                     disabled={Boolean(busy)}
-                    onClick={() => void run(`remove-${cidr}`, () => removeWhitelist(campus.id, cidr), `${cidr} was removed.`)}
+                    onClick={() => confirmThen(`remove-${cidr}`, 'Removing a trusted network', (password) => removeWhitelist(campus.id, cidr, password), `${cidr} was removed.`)}
                     aria-label={`Remove ${cidr}`}
                     title="Remove"
                   >
@@ -131,6 +145,8 @@ const CampusCard = ({ campus, update, whitelistCurrentIp, removeWhitelist }) => 
         </div>
       </div>
     </Card>
+    {pending && <ConfirmPasswordModal action={pending.label} onConfirm={runConfirmed} onClose={() => setPending(null)} />}
+    </>
   );
 };
 
