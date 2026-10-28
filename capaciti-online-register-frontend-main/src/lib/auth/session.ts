@@ -1,11 +1,12 @@
 import { UserRole } from '../../api/types';
 
 const sessionStorageKey = 'capaciti-session';
+const sessionExpiredEvent = 'capaciti:session-expired';
 const maxTimerDelay = 2_147_000_000;
 
 interface ApiSession {
   token: string;
-  expiresAt: number | null;
+  expiresAt: number;
 }
 
 let session: ApiSession | null = null;
@@ -32,17 +33,22 @@ function removeStoredSession(): void {
   if (typeof window !== 'undefined') window.sessionStorage.removeItem(sessionStorageKey);
 }
 
-function expireSession(redirect: boolean): void {
+function notifySessionExpired(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(sessionExpiredEvent));
+}
+
+function expireSession(redirect: boolean, notify = redirect): void {
   stopExpirationTimer();
   session = null;
   sessionLoaded = true;
   removeStoredSession();
+  if (notify) notifySessionExpired();
   if (redirect) redirectToLogin();
 }
 
 function scheduleExpiration(): void {
   stopExpirationTimer();
-  if (session?.expiresAt === null || session?.expiresAt === undefined) return;
+  if (!session) return;
 
   const remaining = session.expiresAt - Date.now();
   if (remaining <= 0) {
@@ -51,7 +57,7 @@ function scheduleExpiration(): void {
   }
 
   expirationTimer = setTimeout(() => {
-    if (session?.expiresAt !== null && session?.expiresAt !== undefined && session.expiresAt <= Date.now()) {
+    if (session && session.expiresAt <= Date.now()) {
       expireSession(true);
     } else {
       scheduleExpiration();
@@ -61,7 +67,7 @@ function scheduleExpiration(): void {
 
 function restoreSession(): ApiSession | null {
   if (sessionLoaded) {
-    if (session?.expiresAt !== null && session?.expiresAt !== undefined && session.expiresAt <= Date.now()) {
+    if (session && session.expiresAt <= Date.now()) {
       expireSession(true);
     }
     return session;
@@ -79,14 +85,16 @@ function restoreSession(): ApiSession | null {
       || parsed === null
       || !('token' in parsed)
       || typeof parsed.token !== 'string'
+      || !parsed.token
       || !('expiresAt' in parsed)
-      || (parsed.expiresAt !== null && typeof parsed.expiresAt !== 'number')
+      || typeof parsed.expiresAt !== 'number'
+      || !Number.isFinite(parsed.expiresAt)
     ) {
       removeStoredSession();
       return null;
     }
     session = { token: parsed.token, expiresAt: parsed.expiresAt };
-    if (session.expiresAt !== null && session.expiresAt <= Date.now()) {
+    if (session.expiresAt <= Date.now()) {
       expireSession(false);
       return null;
     }
@@ -102,20 +110,16 @@ export function getApiToken(): string | null {
   return restoreSession()?.token ?? null;
 }
 
-export function setApiToken(token: string, expiresAt?: string): void {
+export function setApiToken(token: string, expiresAt: string): void {
   if (!token) throw new Error('The API did not provide an authentication token.');
 
-  const existingSession = restoreSession();
-  let expiresAtMilliseconds = existingSession?.token === token ? existingSession.expiresAt : null;
-  if (expiresAt !== undefined) {
-    expiresAtMilliseconds = Date.parse(expiresAt);
-    if (!Number.isFinite(expiresAtMilliseconds)) {
-      throw new Error('The API returned an invalid session expiry time.');
-    }
-    if (expiresAtMilliseconds <= Date.now()) {
-      expireSession(false);
-      throw new Error('The authentication session has expired.');
-    }
+  const expiresAtMilliseconds = Date.parse(expiresAt);
+  if (!Number.isFinite(expiresAtMilliseconds)) {
+    throw new Error('The API returned an invalid session expiry time.');
+  }
+  if (expiresAtMilliseconds <= Date.now()) {
+    expireSession(false);
+    throw new Error('The authentication session has expired.');
   }
 
   session = { token, expiresAt: expiresAtMilliseconds };
@@ -132,8 +136,11 @@ export function clearApiToken(options: { redirect?: boolean } = {}): void {
     && typeof window !== 'undefined'
     && window.sessionStorage.getItem(sessionStorageKey) !== null;
   const hadSession = Boolean(session?.token) || hasSavedSession;
-  expireSession(false);
-  if (options.redirect !== false && hadSession) redirectToLogin();
+  expireSession(false, false);
+  if (options.redirect !== false && hadSession) {
+    notifySessionExpired();
+    redirectToLogin();
+  }
 }
 
 export function isUserRole(role: unknown): role is UserRole {
