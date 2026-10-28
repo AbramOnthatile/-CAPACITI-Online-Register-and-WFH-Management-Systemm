@@ -10,11 +10,12 @@ import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import { downloadCsv } from '../../lib/downloadCsv';
 import { getStatusMetadata } from '../../lib/status';
+import { Skeleton } from '../../components/common/RequestState';
+import { formatSastDate, formatSastTime } from '../../lib/time';
+import { canRetryError } from '../../api/client';
 
 const statusFilters = ['ALL', ...new Set([...Object.values(ArrivalStatus), ...Object.values(DepartureStatus)])];
-const formatTime = (value) => value
-  ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
-  : '—';
+const formatTime = (value) => formatSastTime(value);
 const duration = (entry) => {
   if (!entry.clockInAt || !entry.clockOutAt) return '—';
   const minutes = Math.max(0, Math.floor((Date.parse(entry.clockOutAt) - Date.parse(entry.clockInAt)) / 60000));
@@ -45,7 +46,7 @@ const EntryDetails = ({ entry }) => (
 );
 
 const AttendanceHistory = () => {
-  const { attendance, attendanceLoading, attendanceError } = useApp();
+  const { attendance, attendanceLoading, attendanceError, refreshAttendance } = useApp();
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [sheetEntry, setSheetEntry] = useState(null);
@@ -92,6 +93,8 @@ const AttendanceHistory = () => {
       </div>
 
       <Alert>{attendanceError?.message}</Alert>
+      {canRetryError(attendanceError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshAttendance()}>Retry</button>}
+      {attendanceLoading && <Skeleton label="Loading attendance history" />}
 
       {/* Phones: tappable record cards */}
       <ul className="list md:hidden">
@@ -100,7 +103,7 @@ const AttendanceHistory = () => {
             <button type="button" onClick={() => setSheetEntry(entry)} className="surface surface-interactive flex w-full items-center gap-3 p-4 text-left">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-sm font-bold text-navy">{entry.attendanceDate}</p>
+                  <p className="font-mono text-sm font-bold text-navy">{formatSastDate(entry.attendanceDate)}</p>
                   <p className="font-mono text-sm font-bold text-navy">{duration(entry)}</p>
                 </div>
                 <p className="mt-0.5 font-mono text-xs text-slate-500">{formatTime(entry.clockInAt)} → {formatTime(entry.clockOutAt)}</p>
@@ -125,7 +128,7 @@ const AttendanceHistory = () => {
               <tbody>
                 {filtered.map((entry) => (
                   <tr key={entry.id} onClick={() => setSelectedEntry(entry)} aria-selected={selected?.id === entry.id} className={`cursor-pointer ${selected?.id === entry.id ? 'bg-primary-50/70' : ''}`}>
-                    <td className="font-mono font-semibold tabular-nums text-navy">{entry.attendanceDate}</td>
+                    <td className="font-mono font-semibold tabular-nums text-navy">{formatSastDate(entry.attendanceDate)}</td>
                     <td><div className="flex flex-col items-start gap-1"><StatusBadge status={entry.arrivalStatus} />{entry.departureStatus && <StatusBadge status={entry.departureStatus} />}</div></td>
                     <td className="font-mono tabular-nums text-slate-600">{formatTime(entry.clockInAt)}</td>
                     <td className="font-mono text-xs text-slate-600">{breakTimes(entry, 'TEA')}</td>
@@ -140,14 +143,14 @@ const AttendanceHistory = () => {
           </div>
         </div>
         <div className="lg:col-span-4">
-          <Card title="Entry details" subtitle={selected ? selected.attendanceDate : undefined}>
+          <Card title="Entry details" subtitle={selected ? formatSastDate(selected.attendanceDate) : undefined}>
             {selected ? <EntryDetails entry={selected} /> : <p className="meta">{attendanceLoading ? 'Loading records...' : 'Select an attendance record to view details.'}</p>}
           </Card>
         </div>
       </div>
 
       {sheetEntry && (
-        <Modal title="Entry details" description={sheetEntry.attendanceDate} onClose={() => setSheetEntry(null)}>
+        <Modal title="Entry details" description={formatSastDate(sheetEntry.attendanceDate)} onClose={() => setSheetEntry(null)}>
           <EntryDetails entry={sheetEntry} />
         </Modal>
       )}

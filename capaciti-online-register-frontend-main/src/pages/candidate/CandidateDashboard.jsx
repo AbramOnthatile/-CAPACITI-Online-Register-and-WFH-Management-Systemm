@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, CheckCircle2, Building2, Home, ArrowRight, Send, ChevronRight, LifeBuoy } from 'lucide-react';
 import { PromptStage, PromptStatus, WfhStatus, WorkMode } from '../../api/types';
@@ -9,48 +9,60 @@ import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import Modal from '../../components/common/Modal';
 import EmptyState from '../../components/common/EmptyState';
+import ClockButton from '../../components/common/ClockButton';
+import { createDraftKey, getCurrentCoordinates } from '../../lib/attendanceAction';
+import { Skeleton } from '../../components/common/RequestState';
 import { getStatusMetadata } from '../../lib/status';
-import { parseTimestamp } from '../../lib/timestamps';
-
-const promptExpiryFormatter = new Intl.DateTimeFormat('en-ZA', {
-  timeZone: 'Africa/Johannesburg',
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
-const formatPromptExpiry = (value) => {
-  const timestamp = parseTimestamp(value);
-  return Number.isFinite(timestamp) ? promptExpiryFormatter.format(new Date(timestamp)) : 'Unavailable';
-};
+import { formatSastDate, formatSastTime, getSastHour } from '../../lib/time';
+import { ApiError, getFieldError, getUserErrorMessage } from '../../api/client';
+import { canRetryError } from '../../api/client';
 
 const formatClock = (value) => (value
-  ? new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+  ? formatSastTime(value)
   : '--:--');
 
 const CandidateDashboard = () => {
   const { user } = useAuth();
-  const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut, wfh, wfhLoading, wfhError, prompts, promptsError, promptServerTime } = useApp();
+  const { dashboard, dashboardLoading, dashboardError, attendanceLoading, wfh, wfhLoading, wfhError, prompts, activePrompts, promptsError, promptServerTime, clockIn, clockOut, refreshDashboard, refreshWfh, refreshPrompts } = useApp();
   const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
   const [action, setAction] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionQuality, setActionQuality] = useState('');
+  const [actionReason, setActionReason] = useState('');
+  const [needsReason, setNeedsReason] = useState(false);
+  const [actionRequest, setActionRequest] = useState(null);
   const [saving, setSaving] = useState(false);
+  const actionInFlight = useRef(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [retryActionError, setRetryActionError] = useState(null);
   const [selectedMode, setSelectedMode] = useState(user?.defaultMode ?? WorkMode.ON_SITE);
+  const serverTime = dashboard?.serverTime ?? '';
 
   useEffect(() => {
     const timer = window.setInterval(() => setServerElapsedSeconds((seconds) => seconds + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const serverNow = useMemo(() => new Date(Date.parse(promptServerTime) + serverElapsedSeconds * 1000), [promptServerTime, serverElapsedSeconds]);
+  useEffect(() => setServerElapsedSeconds(0), [serverTime]);
+
+  const serverNow = useMemo(
+    () => serverTime ? new Date(Date.parse(serverTime) + serverElapsedSeconds * 1000) : null,
+    [serverTime, serverElapsedSeconds],
+  );
   const greeting = useMemo(() => {
-    const hour = Number(new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', hourCycle: 'h23' }).format(serverNow));
+    if (!serverNow || Number.isNaN(serverNow.getTime())) return 'Hello';
+    const hour = getSastHour(serverNow.toISOString());
+    if (hour === null) return 'Hello';
     return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   }, [serverNow]);
-  const timeString = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(serverNow);
-  const dateString = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', weekday: 'long', day: 'numeric', month: 'long' }).format(serverNow);
+  const timeString = serverNow && !Number.isNaN(serverNow.getTime())
+    ? formatSastTime(serverNow.toISOString(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : '--:--:--';
+  const dateString = serverNow && !Number.isNaN(serverNow.getTime())
+    ? formatSastDate(serverNow.toISOString(), { weekday: 'long', day: 'numeric', month: 'long' })
+    : 'Waiting for server time';
   const formatElapsed = (start) => {
+    if (!serverNow || Number.isNaN(serverNow.getTime())) return '--:--:--';
     const elapsed = Math.max(0, Math.floor((serverNow.getTime() - Date.parse(start)) / 1000));
     const hours = Math.floor(elapsed / 3600);
     const minutes = Math.floor((elapsed % 3600) / 60);
@@ -59,25 +71,98 @@ const CandidateDashboard = () => {
   };
   const candidateWfh = wfh.filter((request) => request.userId === user?.id);
   const approvedWfh = candidateWfh.filter((request) => request.status === WfhStatus.APPROVED);
-  const nextPrompt = prompts.find((prompt) => prompt.status === PromptStatus.ACTIVE);
+  const nextPrompt = activePrompts[0];
+  const attendanceToday = dashboard?.today ?? null;
   const currentMode = attendanceToday?.workMode ?? selectedMode;
   const clockedIn = Boolean(attendanceToday?.clockInAt);
   const clockedOut = Boolean(attendanceToday?.clockOutAt);
   const working = clockedIn && !clockedOut;
-  const pageError = attendanceError?.message || wfhError?.message || promptsError?.message;
+  const pageError = dashboardError || wfhError || promptsError;
+  const retryPageData = dashboardError ? refreshDashboard : wfhError ? refreshWfh : refreshPrompts;
 
   const confirmAction = async () => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setActionError('');
+    setFieldErrors({});
+    setActionQuality('');
     setSaving(true);
     try {
-      if (action === 'clock-in') await clockIn(currentMode);
-      else if (action === 'clock-out') await clockOut();
+      let result;
+      if (action === 'clock-in') {
+        let request = actionRequest;
+        if (!request) {
+          const position = currentMode === WorkMode.ON_SITE ? await getCurrentCoordinates() : null;
+          request = {
+            draftKey: createDraftKey(),
+            workMode: currentMode,
+            lateReason: null,
+            ...(position ?? {}),
+          };
+          setActionRequest(request);
+        } else if (needsReason) {
+          if (!actionReason.trim()) {
+            setActionError('Enter the reason requested by the server.');
+            return;
+          }
+          request = { ...request, lateReason: actionReason.trim() };
+          setActionRequest(request);
+        }
+        result = await clockIn(request);
+      } else if (action === 'clock-out') {
+        let request = actionRequest;
+        if (!request) {
+          request = {
+            draftKey: createDraftKey(),
+            earlyClockoutReason: null,
+            lateClockoutNote: null,
+            deliverableLink: null,
+          };
+          setActionRequest(request);
+        } else if (needsReason) {
+          if (!actionReason.trim()) {
+            setActionError('Enter the reason requested by the server.');
+            return;
+          }
+          request = { ...request, earlyClockoutReason: actionReason.trim() };
+          setActionRequest(request);
+        }
+        result = await clockOut(request);
+      }
+
+      if ((result?.quality?.accepted === false || result?.requiresReason) && result.quality.feedbackMessage) {
+        setActionQuality(result.quality.feedbackMessage);
+      }
+      if (result?.requiresReason) {
+        setNeedsReason(true);
+        return;
+      }
+      if (result?.quality?.accepted === false) {
+        setNeedsReason(true);
+        return;
+      }
       setAction('');
+      setActionRequest(null);
+      setActionReason('');
+      setNeedsReason(false);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Attendance could not be updated.');
+      setActionError(getUserErrorMessage(error, 'Attendance could not be updated.'));
+      setRetryActionError(error);
+      if (error instanceof ApiError) setFieldErrors(error.fieldErrors);
     } finally {
+      actionInFlight.current = false;
       setSaving(false);
     }
+  };
+
+  const closeAction = () => {
+    if (saving) return;
+    setAction('');
+    setActionRequest(null);
+    setActionReason('');
+    setNeedsReason(false);
+    setActionError('');
+    setActionQuality('');
   };
 
   return (
@@ -88,7 +173,10 @@ const CandidateDashboard = () => {
         <p className="page-subtitle mt-1">{working ? 'You are clocked in. Have a productive day.' : 'Review your attendance and scheduled check-ins.'}</p>
       </header>
 
-      <Alert>{pageError}</Alert>
+      <Alert>{pageError?.message}</Alert>
+      {canRetryError(pageError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void retryPageData()}>Retry</button>}
+
+      {dashboardLoading && <Skeleton label="Loading candidate dashboard" />}
 
       {nextPrompt && (
         <Link to="/candidate/progress" className="surface surface-interactive flex items-center gap-3 border-primary-600/25 bg-primary-50/70 p-4">
@@ -136,14 +224,23 @@ const CandidateDashboard = () => {
             </div>
 
             {!clockedIn && (
-              <button type="button" disabled={attendanceLoading} onClick={() => setAction('clock-in')} className="btn btn-primary btn-lg btn-block">
-                <CheckCircle2 className="h-5 w-5" />Clock in
-              </button>
+              <ClockButton
+                action="clock-in"
+                icon={CheckCircle2}
+                disabled={attendanceLoading}
+                pending={saving}
+                onClick={() => setAction('clock-in')}
+                className="btn btn-primary btn-lg btn-block"
+              />
             )}
             {working && (
-              <button type="button" onClick={() => setAction('clock-out')} className="btn btn-dark btn-lg btn-block">
-                <Clock className="h-5 w-5" />Clock out
-              </button>
+              <ClockButton
+                action="clock-out"
+                icon={Clock}
+                pending={saving}
+                onClick={() => setAction('clock-out')}
+                className="btn btn-dark btn-lg btn-block"
+              />
             )}
             {clockedOut && <Alert tone="success">Attendance complete for today.</Alert>}
 
@@ -165,15 +262,8 @@ const CandidateDashboard = () => {
             <ul className="list">
               {Object.values(PromptStage).map((stage) => {
                 const prompt = prompts.find((item) => item.stage === stage);
-                return (
-                  <li key={stage} className="list-row">
-                    <div className="min-w-0">
-                      <p className="font-bold text-navy">{getStatusMetadata(stage).label}</p>
-                      {prompt && <p className="mt-0.5 text-xs text-slate-400">Expires {formatPromptExpiry(prompt.expiresAt)}</p>}
-                    </div>
-                    {prompt ? <StatusBadge status={prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}
-                  </li>
-                );
+                const isActive = prompt && activePrompts.some((activePrompt) => activePrompt.id === prompt.id);
+                return <div key={stage} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><p className="text-xs font-bold text-[#1D2951]">{getStatusMetadata(stage).label}</p>{prompt && <p className="mt-1 text-[10px] text-slate-400">Expires {formatSastDate(prompt.expiresAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>}</div>{prompt ? <StatusBadge status={isActive ? PromptStatus.ACTIVE : prompt.status} /> : <span className="text-xs text-slate-400">Not scheduled</span>}</div>;
               })}
             </ul>
           </Card>
@@ -208,16 +298,29 @@ const CandidateDashboard = () => {
         <Modal
           title={action === 'clock-in' ? 'Confirm clock in' : 'Confirm clock out'}
           description={action === 'clock-in' ? `You will clock in as ${currentMode === WorkMode.WFH ? 'working from home' : 'on-site'}.` : 'Are you ready to clock out for today?'}
-          onClose={() => setAction('')}
+          onClose={closeAction}
           closeDisabled={saving}
           footer={(
             <>
-              <button type="button" onClick={() => setAction('')} disabled={saving} className="btn btn-secondary">Cancel</button>
+              <button type="button" onClick={closeAction} disabled={saving} className="btn btn-secondary">Cancel</button>
               <button type="button" disabled={saving} onClick={() => void confirmAction()} className="btn btn-primary">{saving ? 'Saving...' : 'Confirm'}</button>
             </>
           )}
         >
+          {actionQuality && <Alert tone={needsReason ? 'info' : 'warning'}>{actionQuality}</Alert>}
           {actionError && <Alert>{actionError}</Alert>}
+          {canRetryError(retryActionError) && <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => void confirmAction()}>Retry</button>}
+          {needsReason && (
+            <label className="field">
+              <span className="field-label">Reason</span>
+              <textarea rows="3" className="input" value={actionReason} onChange={(event) => setActionReason(event.target.value)} />
+              {getFieldError(fieldErrors, action === 'clock-in' ? 'lateReason' : 'earlyClockoutReason', 'reason') && (
+                <span role="alert" className="text-xs text-rose-700">
+                  {getFieldError(fieldErrors, action === 'clock-in' ? 'lateReason' : 'earlyClockoutReason', 'reason')}
+                </span>
+              )}
+            </label>
+          )}
         </Modal>
       )}
     </div>

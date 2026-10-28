@@ -1,33 +1,26 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../../../api/client';
 import Modal from '../../../../components/common/Modal';
 import Alert from '../../../../components/common/Alert';
+import { getSastToday, subtractLocalDays } from '../../../../lib/time';
 
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-const today = formatDate(new Date());
-
-function subtractDays(value, days) {
-  const date = new Date(`${value}T12:00:00`);
-  date.setDate(date.getDate() - days);
-  return formatDate(date);
-}
+const today = getSastToday();
 
 const NewScorecardSheet = ({ onClose, onCreate }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('WEEKLY');
   const [assessmentDate, setAssessmentDate] = useState(today);
-  const [periodStart, setPeriodStart] = useState(subtractDays(today, 7));
+  const [periodStart, setPeriodStart] = useState(subtractLocalDays(today, 7));
   const [periodEnd, setPeriodEnd] = useState(today);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [retryError, setRetryError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const inFlight = useRef(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (inFlight.current) return;
     if (periodStart > periodEnd) {
       setError('The period start must be on or before the period end.');
       return;
@@ -37,12 +30,17 @@ const NewScorecardSheet = ({ onClose, onCreate }) => {
       return;
     }
     setError('');
+    setFieldErrors({});
+    inFlight.current = true;
     setSaving(true);
     try {
       await onCreate({ title: title.trim(), type, assessmentDate, periodStart, periodEnd });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'The scorecard could not be created.');
+      setError(getUserErrorMessage(caught, 'The scorecard could not be created.'));
+      setRetryError(caught);
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
     } finally {
+      inFlight.current = false;
       setSaving(false);
     }
   };
@@ -50,7 +48,7 @@ const NewScorecardSheet = ({ onClose, onCreate }) => {
   const updateAssessmentDate = (value) => {
     setAssessmentDate(value);
     setPeriodEnd(value);
-    setPeriodStart(subtractDays(value, 7));
+    setPeriodStart(subtractLocalDays(value, 7));
   };
 
   return (
@@ -71,9 +69,14 @@ const NewScorecardSheet = ({ onClose, onCreate }) => {
     >
       <div className="space-y-4">
         <Alert>{error}</Alert>
+        {canRetryError(retryError) && <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={(event) => {
+          const form = event.currentTarget.closest('form');
+          form?.requestSubmit();
+        }}>Retry</button>}
         <label className="field">
           <span className="field-label">Title</span>
           <input required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="input" placeholder="e.g. Weekly scorecard — 26 October" />
+          {getFieldError(fieldErrors, 'title') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'title')}</span>}
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="field">
@@ -86,14 +89,17 @@ const NewScorecardSheet = ({ onClose, onCreate }) => {
           <label className="field">
             <span className="field-label">Assessment date</span>
             <input required type="date" value={assessmentDate} onChange={(event) => updateAssessmentDate(event.target.value)} className="input" />
+            {getFieldError(fieldErrors, 'assessmentDate') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'assessmentDate')}</span>}
           </label>
           <label className="field">
             <span className="field-label">Period start</span>
             <input required type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} className="input" />
+            {getFieldError(fieldErrors, 'periodStart') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'periodStart')}</span>}
           </label>
           <label className="field">
             <span className="field-label">Period end</span>
             <input required type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} className="input" />
+            {getFieldError(fieldErrors, 'periodEnd') && <span role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'periodEnd')}</span>}
           </label>
         </div>
       </div>

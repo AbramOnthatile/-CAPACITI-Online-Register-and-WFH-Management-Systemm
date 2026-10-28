@@ -2,10 +2,13 @@ package za.ac.capaciti.capacitionlineregisterbackend.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.WorkMode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +24,9 @@ public class User extends BaseEntity {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
@@ -30,6 +36,14 @@ public class User extends BaseEntity {
     @Column(name = "role", nullable = false)
     private String role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "default_mode", nullable = false)
+    private WorkMode workMode = WorkMode.ON_SITE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campus_id")
+    private CampusHub campus;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "champion_id")
     private User champion;
@@ -38,6 +52,13 @@ public class User extends BaseEntity {
     private boolean active = true;
 
     public String getFullName() {
-        return firstName + " " + lastName;
+        String normalizedFirstName = firstName == null ? "" : firstName.trim();
+        String normalizedLastName = lastName == null ? "" : lastName.trim();
+        if (normalizedFirstName.isEmpty()) {
+            return normalizedLastName;
+        }
+        return normalizedLastName.isEmpty()
+                ? normalizedFirstName
+                : normalizedFirstName + " " + normalizedLastName;
     }
 }

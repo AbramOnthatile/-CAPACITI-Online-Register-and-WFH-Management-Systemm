@@ -7,6 +7,9 @@ import { percentTone } from '../../../lib/scoring';
 import NewScorecardSheet from './components/NewScorecardSheet';
 import PageHeader from '../../../components/common/PageHeader';
 import Alert from '../../../components/common/Alert';
+import { Skeleton } from '../../../components/common/RequestState';
+import { canRetryError } from '../../../api/client';
+import { formatSastDate } from '../../../lib/time';
 
 const percentClasses = {
   success: 'bg-emerald-50 text-emerald-700',
@@ -18,7 +21,7 @@ const percentClasses = {
 
 const ScorecardsListPage = () => {
   const navigate = useNavigate();
-  const { assessments, loading, error, createAssessment } = useScorecards();
+  const { assessments, loading, error, createAssessment, refresh } = useScorecards();
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -56,6 +59,7 @@ const ScorecardsListPage = () => {
       />
 
       <Alert>{error?.message}</Alert>
+      {canRetryError(error) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refresh()}>Retry</button>}
 
       <div className="surface surface-pad space-y-3">
         <div className="chip-row items-center" role="group" aria-label="Filter by assessment type">
@@ -72,7 +76,7 @@ const ScorecardsListPage = () => {
         </div>
       </div>
 
-      <div className="surface overflow-hidden">
+      {loading ? <Skeleton label="Loading scorecards" /> : <div className="surface overflow-hidden">
         <div className="table-wrap">
           <table className="table min-w-[640px]">
             <thead>
@@ -86,13 +90,10 @@ const ScorecardsListPage = () => {
               </tr>
             </thead>
             <tbody>
-              {loading && (
-                <tr><td colSpan={6} className="table-empty" role="status">Loading scorecards...</td></tr>
-              )}
-              {!loading && filtered.map((assessment) => (
+              {filtered.map((assessment) => (
                 <tr key={assessment.id}>
                   <td className="font-bold text-navy">{assessment.title}</td>
-                  <td className="whitespace-nowrap font-mono text-slate-600">{assessment.assessmentDate}</td>
+                  <td className="whitespace-nowrap font-mono text-slate-600">{formatSastDate(assessment.assessmentDate)}</td>
                   <td className="text-slate-600">{assessment.type === 'WEEKLY' ? 'Weekly' : 'Project'}</td>
                   <td><StatusBadge status={assessment.status} /></td>
                   <td>
@@ -107,16 +108,16 @@ const ScorecardsListPage = () => {
                   </td>
                 </tr>
               ))}
-              {!loading && !error && filtered.length === 0 && (
+              {!error && filtered.length === 0 && (
                 <tr><td colSpan={6} className="table-empty">No scorecards match these filters.</td></tr>
               )}
-              {!loading && error && filtered.length === 0 && (
+              {error && filtered.length === 0 && (
                 <tr><td colSpan={6} className="table-empty">Scorecards could not be displayed.</td></tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {sheetOpen && <NewScorecardSheet onClose={() => setSheetOpen(false)} onCreate={handleCreate} />}
     </div>

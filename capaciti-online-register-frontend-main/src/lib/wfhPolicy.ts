@@ -1,4 +1,5 @@
 import { WfhStatus, type WfhRequest } from '../api/types';
+import { getSastDateValue } from './time';
 
 export const weeklyWfhLimit = 2;
 
@@ -21,9 +22,9 @@ const weekStart = (date: string) => {
   return dateString(day);
 };
 
-export function getCurrentWeekStart() {
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg' }).format(new Date());
-  return weekStart(today);
+export function getCurrentWeekStart(serverTime?: string | null): string | null {
+  const today = serverTime ? getSastDateValue(serverTime) : null;
+  return today ? weekStart(today) : null;
 }
 
 export function countWfhDaysForWeek(requests: WfhRequest[], week: string) {

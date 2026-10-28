@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.DayOfWeek;
 
 public final class TimeUtil {
 
@@ -22,6 +23,11 @@ public final class TimeUtil {
 
     public static ZonedDateTime now() {
         return ZonedDateTime.now(ZONE);
+    }
+
+    public static boolean isWeekday(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY;
     }
 
     public static Instant toInstant(LocalDate date, LocalTime time) {

@@ -2,12 +2,14 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import PageHeader from '../../components/common/PageHeader';
-import Alert from '../../components/common/Alert';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { formatSastDateTime } from '../../lib/time';
+import { canRetryError } from '../../api/client';
 
-const formatTime = (value) => new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+const formatTime = (value) => formatSastDateTime(value);
 
 const AuditLog = () => {
-  const { audit, auditLoading, auditError } = useApp();
+  const { audit, auditLoading, auditError, refreshAudit } = useApp();
   const [search, setSearch] = useState('');
   const [targetType, setTargetType] = useState('ALL');
   const targetTypes = [...new Set(audit.map((entry) => entry.targetType))];
@@ -16,7 +18,7 @@ const AuditLog = () => {
     const matchesSearch = !search || [entry.actorName, entry.action, entry.targetType, entry.targetId ?? '', detailText].some((value) => value.toLowerCase().includes(search.toLowerCase()));
     return matchesSearch && (targetType === 'ALL' || entry.targetType === targetType);
   }), [audit, search, targetType]);
-  const emptyMessage = auditLoading ? 'Loading audit records...' : 'No audit records match the current filters.';
+  const emptyMessage = 'No audit records match the current filters.';
 
   return (
     <div className="page">
@@ -37,7 +39,10 @@ const AuditLog = () => {
         </label>
       </div>
 
-      <Alert>{auditError?.message}</Alert>
+      {auditError && <ErrorState message={auditError.message} />}
+      {canRetryError(auditError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refreshAudit()}>Retry</button>}
+      {auditLoading ? <Skeleton label="Loading audit records" /> : !auditError && (
+      <>
 
       {/* Phones */}
       <ul className="list md:hidden">
@@ -70,11 +75,13 @@ const AuditLog = () => {
                   <td className="max-w-md break-words font-mono text-xs text-slate-600">{JSON.stringify(entry.details)}</td>
                 </tr>
               ))}
-              {!auditError && !filtered.length && <tr><td colSpan={5} className="table-empty">{emptyMessage}</td></tr>}
+          {!auditError && !filtered.length && <tr><td colSpan={5} className="table-empty">{emptyMessage}</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

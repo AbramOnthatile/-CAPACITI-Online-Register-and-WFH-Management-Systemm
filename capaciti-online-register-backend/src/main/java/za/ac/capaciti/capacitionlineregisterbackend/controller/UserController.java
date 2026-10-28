@@ -21,11 +21,11 @@ import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.CreateUserR
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UpdateUserStatusRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.user.UserDto;
-import za.ac.capaciti.capacitionlineregisterbackend.domain.enums.Role;
+import za.ac.capaciti.capacitionlineregisterbackend.enums.UserRole;
 import za.ac.capaciti.capacitionlineregisterbackend.service.IUserService;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
@@ -37,7 +37,7 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<Page<UserDto>> list(
-            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) UserRole role,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String text,
             Pageable pageable) {

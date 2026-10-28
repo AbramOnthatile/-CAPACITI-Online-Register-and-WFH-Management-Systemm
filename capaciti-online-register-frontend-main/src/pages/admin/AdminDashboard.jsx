@@ -10,9 +10,11 @@ import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
+import { ErrorState, Skeleton } from '../../components/common/RequestState';
+import { canRetryError } from '../../api/client';
 
 const AdminDashboard = () => {
-  const { users, usersLoading, usersError, wfh, wfhError, tickets, ticketsError, campuses, auditError } = useApp();
+  const { users, usersLoading, usersError, wfh, tickets, campuses, campusesError, reports, reportsLoading, reportsError, isDemoMode, refreshUsers, refreshCampuses, refreshReports } = useApp();
   const [search, setSearch] = useState('');
   const candidates = useMemo(() => users.filter((user) => user.role === UserRole.CANDIDATE), [users]);
   const champions = useMemo(() => users.filter((user) => user.role === UserRole.TECH_CHAMP), [users]);
@@ -21,7 +23,7 @@ const AdminDashboard = () => {
     user.email.toLowerCase().includes(search.toLowerCase())), [candidates, search]);
   const pendingWfh = wfh.filter((request) => request.status === WfhStatus.PENDING);
   const openTickets = tickets.filter((ticket) => ticket.status === TicketStatus.OPEN);
-  const errors = [usersError, wfhError, ticketsError, auditError].filter(Boolean);
+  const errors = [usersError, campusesError, reportsError].filter(Boolean);
 
   return (
     <div className="page">
@@ -34,12 +36,14 @@ const AdminDashboard = () => {
       />
 
       {errors.map((error) => <Alert key={error.message}>{error.message}</Alert>)}
+      {errors.some(canRetryError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void Promise.all([refreshUsers(), refreshCampuses(), refreshReports()])}>Retry</button>}
+      {(usersLoading || reportsLoading) && <Skeleton label="Loading administrator overview" />}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard icon={Users} title="Candidates" value={candidates.length} detail="Registered users" tone="primary" />
         <StatCard icon={UserCheck} title="Tech Champions" value={champions.length} detail="Registered users" tone="slate" />
         <StatCard icon={Building2} title="Campuses" value={campuses.length} detail="Configured hubs" tone="success" />
-        <StatCard icon={AlertTriangle} title="Open tickets" value={openTickets.length} detail="Requires follow-up" tone="warning" />
+        <StatCard icon={AlertTriangle} title="Open tickets" value={reports?.openTickets ?? 0} detail="Requires follow-up" tone="warning" />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12 lg:gap-6">
@@ -80,7 +84,9 @@ const AdminDashboard = () => {
         </div>
         <div className="space-y-5 lg:col-span-4 lg:space-y-6">
           <Card title="Pending WFH requests" actions={<Link to="/admin/reports" className="link text-xs">Reports <ArrowRight className="h-3.5 w-3.5" /></Link>}>
-            {pendingWfh.length ? (
+            {!isDemoMode && (reports?.pendingWfh ?? 0) > 0 ? (
+              <p className="meta">{reports.pendingWfh} pending request{reports.pendingWfh === 1 ? '' : 's'} are included in the aggregate report. Detailed review is available to the assigned champion.</p>
+            ) : pendingWfh.length ? (
               <ul className="list">
                 {pendingWfh.slice(0, 4).map((request) => (
                   <li key={request.id} className="rounded-xl border border-slate-100 p-3.5">
@@ -93,7 +99,9 @@ const AdminDashboard = () => {
             ) : <EmptyState icon={CheckCircle2} description="No pending WFH requests." />}
           </Card>
           <Card title="Open blockers & tickets" actions={<Link to="/admin/escalations" className="link text-xs">Manage <ArrowRight className="h-3.5 w-3.5" /></Link>}>
-            {openTickets.length ? (
+            {!isDemoMode && (reports?.openTickets ?? 0) > 0 ? (
+              <p className="meta">{reports.openTickets} open tickets are included in the aggregate report. Ticket details are demo-only for administrator accounts.</p>
+            ) : openTickets.length ? (
               <ul className="list">
                 {openTickets.slice(0, 4).map((ticket) => (
                   <li key={ticket.id} className="rounded-xl border border-salmon/20 bg-salmon/5 p-3.5">

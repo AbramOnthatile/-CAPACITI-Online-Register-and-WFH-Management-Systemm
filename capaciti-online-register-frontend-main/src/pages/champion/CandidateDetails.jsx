@@ -8,6 +8,7 @@ import Alert from '../../components/common/Alert';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
 import { getStatusMetadata } from '../../lib/status';
+import { WfhStatus } from '../../api/types';
 
 const CandidateDetails = () => {
   const { id } = useParams();
@@ -25,7 +26,7 @@ const CandidateDetails = () => {
 
   return (
     <div className="page-narrow">
-      <PageHeader backTo="/champion/candidates" backLabel="Back to candidates" eyebrow="Candidate details" title={candidate.fullName} />
+      <PageHeader backTo="/champion/candidates" backLabel="Back to candidates" eyebrow="Candidate details" title={candidate.fullName} actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>} />
 
       <section className="surface surface-pad flex items-center gap-4">
         <Avatar name={candidate.fullName} size="lg" />

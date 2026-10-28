@@ -1,17 +1,16 @@
 import {
-  LayoutDashboard,
+  Award,
+  Bell,
+  CheckSquare,
   Clock3,
   History,
   Home,
-  CheckSquare,
-  Bell,
-  User,
-  MapPin,
+  LayoutDashboard,
   LifeBuoy,
-  Award,
   Menu,
+  User,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
 import AppShell from './AppShell';
 
 const navItems = [
@@ -55,18 +54,18 @@ const getPageInfo = (path) => {
   return { title: 'Candidate Portal', subtitle: 'CAPACITI Workforce Management' };
 };
 
-export const CandidateLayout = () => {
-  const { user } = useAuth();
-  return (
+export const CandidateLayout = () => (
+  <>
     <AppShell
       navItems={navItems}
-      mobileTabs={mobileTabs}
       homePath="/candidate/dashboard"
       accent="primary"
-      workspace={{ label: 'Candidate Workspace', icon: MapPin, detail: user?.campusName || 'No campus assigned' }}
+      roleLabel="Candidate"
       getPageInfo={getPageInfo}
+      mobileTabs={mobileTabs}
     />
-  );
-};
+    <PromptCheckInPopup />
+  </>
+);
 
 export default CandidateLayout;

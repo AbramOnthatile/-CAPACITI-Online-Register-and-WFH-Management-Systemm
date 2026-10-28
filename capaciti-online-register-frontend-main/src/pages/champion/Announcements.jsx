@@ -3,10 +3,12 @@ import { Send } from 'lucide-react';
 import Card from '../../components/common/Card';
 import PageHeader from '../../components/common/PageHeader';
 import Alert from '../../components/common/Alert';
+import StatusBadge from '../../components/common/StatusBadge';
+import { WfhStatus } from '../../api/types';
 import { useApp } from '../../context/AppContext';
 
 const Announcements = () => {
-  const { createAnnouncement } = useApp();
+  const { createAnnouncement, isDemoMode } = useApp();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -39,23 +41,24 @@ const Announcements = () => {
 
   return (
     <div className="page-narrow">
-      <PageHeader eyebrow="Candidate communications" title="Announcements" description="Send an update that appears in active candidates' notifications." />
+      <PageHeader eyebrow="Candidate communications" title="Announcements" description="Send an update that appears in active candidates' notifications." actions={<StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>} />
 
       <Alert>{error}</Alert>
       <Alert tone="success">{feedback}</Alert>
+      {!isDemoMode && <Alert tone="info">Announcements are demo-only because no announcement endpoint is available.</Alert>}
 
       <Card title="New announcement" subtitle="All active candidates will receive this in their Notifications page.">
         <form onSubmit={(event) => void submitAnnouncement(event)} className="space-y-4">
           <label className="field">
             <span className="field-label">Title</span>
-            <input required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="input" placeholder="Announcement title" disabled={sending} />
+            <input required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className="input" placeholder="Announcement title" disabled={sending || !isDemoMode} />
           </label>
           <label className="field">
             <span className="field-label">Message</span>
-            <textarea required rows="5" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} className="input" placeholder="Share an important update with candidates." disabled={sending} />
+            <textarea required rows="5" maxLength={2000} value={message} onChange={(event) => setMessage(event.target.value)} className="input" placeholder="Share an important update with candidates." disabled={sending || !isDemoMode} />
           </label>
           <div className="flex justify-end border-t border-slate-100 pt-4">
-            <button type="submit" disabled={sending} className="btn btn-primary w-full sm:w-auto">
+            <button type="submit" disabled={sending || !isDemoMode} className="btn btn-primary w-full sm:w-auto">
               <Send className="h-4 w-4" />
               {sending ? 'Sending...' : 'Send announcement'}
             </button>

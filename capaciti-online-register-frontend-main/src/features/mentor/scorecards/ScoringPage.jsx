@@ -4,8 +4,11 @@ import { ArrowLeft, ChevronDown, ChevronUp, RotateCcw, Save, Send, Trash2 } from
 import StatusBadge from '../../../components/common/StatusBadge';
 import Alert from '../../../components/common/Alert';
 import Modal from '../../../components/common/Modal';
+import { Skeleton } from '../../../components/common/RequestState';
 import { useScorecards } from '../../../api/hooks/scorecards';
 import { overallPercent, percentTone, scoreCriteria, scoreTone } from '../../../lib/scoring';
+import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../../api/client';
+import { formatSastDate } from '../../../lib/time';
 
 const scoreClasses = {
   success: 'border-emerald-300 bg-emerald-100 text-emerald-800',
@@ -48,6 +51,10 @@ const ScoringPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [retryError, setRetryError] = useState(null);
+  const actionInFlight = useRef(false);
+  const retryAction = useRef(() => {});
   const [notice, setNotice] = useState('');
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const savedSnapshot = useRef('');
@@ -114,9 +121,11 @@ const ScoringPage = () => {
   }));
 
   const handleSave = async () => {
-    if (!assessment || readOnly) return;
+    if (!assessment || readOnly || actionInFlight.current) return;
+    actionInFlight.current = true;
     setSaving(true);
     setError('');
+    setFieldErrors({});
     setNotice('');
     try {
       const saved = await saveAssessment(assessment.id, {
@@ -127,16 +136,22 @@ const ScoringPage = () => {
       savedSnapshot.current = editableData(saved);
       setNotice('Draft saved.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'The draft could not be saved.');
+      setError(getUserErrorMessage(caught, 'The draft could not be saved.'));
+      setRetryError(caught);
+      retryAction.current = handleSave;
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
     } finally {
+      actionInFlight.current = false;
       setSaving(false);
     }
   };
 
   const handleStatus = async (action) => {
-    if (!assessment) return;
+    if (!assessment || actionInFlight.current) return;
+    actionInFlight.current = true;
     setSaving(true);
     setError('');
+    setFieldErrors({});
     setNotice('');
     try {
       if (action === 'submit' && isDirty) {
@@ -152,31 +167,44 @@ const ScoringPage = () => {
       setShowSubmitDialog(false);
       setNotice(action === 'submit' ? 'Scorecard submitted.' : 'Scorecard reopened as a draft.');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : `The scorecard could not be ${action === 'submit' ? 'submitted' : 'reopened'}.`);
+      setError(getUserErrorMessage(caught, `The scorecard could not be ${action === 'submit' ? 'submitted' : 'reopened'}.`));
+      setRetryError(caught);
+      retryAction.current = () => handleStatus(action);
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
     } finally {
+      actionInFlight.current = false;
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!assessment || assessment.status !== 'DRAFT') return;
+    if (!assessment || assessment.status !== 'DRAFT' || actionInFlight.current) return;
     if (!window.confirm('Delete this draft scorecard? This cannot be undone.')) return;
+    actionInFlight.current = true;
     setSaving(true);
     setError('');
     try {
       await deleteAssessment(assessment.id);
       navigate('/champion/scorecards', { replace: true });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'The draft could not be deleted.');
+      setError(getUserErrorMessage(caught, 'The draft could not be deleted.'));
+      setRetryError(caught);
+      retryAction.current = handleDelete;
+      if (caught instanceof ApiError) setFieldErrors(caught.fieldErrors);
       setSaving(false);
+    } finally {
+      actionInFlight.current = false;
     }
   };
 
-  if (loading) return <p role="status" className="meta">Loading scorecard...</p>;
+  if (loading) return <div className="page"><Skeleton label="Loading scorecard" /></div>;
   if (!assessment) {
     return (
       <div className="page-narrow">
         <Alert>{error}</Alert>
+        {canRetryError(retryError) && (
+          <button type="button" className="btn btn-secondary btn-sm" disabled={saving} onClick={() => void retryAction.current()}>Retry</button>
+        )}
         <Link to="/champion/scorecards" className="btn btn-secondary"><ArrowLeft className="h-4 w-4" />Back to scorecards</Link>
       </div>
     );
@@ -194,7 +222,7 @@ const ScoringPage = () => {
               <h2 className="page-title">{assessment.title}</h2>
               <StatusBadge status={assessment.status} />
             </div>
-            <p className="page-subtitle mt-1">{assessment.type === 'WEEKLY' ? 'Weekly' : 'Project'} · {assessment.periodStart} – {assessment.periodEnd} · Assessment {assessment.assessmentDate}</p>
+            <p className="page-subtitle mt-1">{assessment.type === 'WEEKLY' ? 'Weekly' : 'Project'} · {formatSastDate(assessment.periodStart)} – {formatSastDate(assessment.periodEnd)} · Assessment {formatSastDate(assessment.assessmentDate)}</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap [&>*:only-child]:col-span-3">
@@ -233,6 +261,7 @@ const ScoringPage = () => {
           className="input mt-2"
           placeholder="Share feedback relevant to the whole group."
         />
+        {getFieldError(fieldErrors, 'groupFeedback') && <p role="alert" className="mt-1 text-xs text-rose-700">{getFieldError(fieldErrors, 'groupFeedback')}</p>}
         <p className="mt-1 text-right text-[10px] text-slate-400">{assessment.groupFeedback.length}/{feedbackLimit}</p>
       </section>
 
@@ -252,7 +281,7 @@ const ScoringPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {assessment.entries.map((entry) => {
+              {assessment.entries.map((entry, entryIndex) => {
                 const suggestion = assessment.attendanceSuggestions.find((item) => item.candidateId === entry.candidateId);
                 const percent = overallPercent(entry.scores);
                 const expanded = expandedIds.includes(entry.candidateId);
@@ -271,6 +300,7 @@ const ScoringPage = () => {
                     onScore={(key, value) => updateScore(entry, key, value)}
                     onToggleFeedback={() => setExpandedIds((current) => current.includes(entry.candidateId) ? current.filter((candidateId) => candidateId !== entry.candidateId) : [...current, entry.candidateId])}
                     onFeedback={(field, value) => updateEntry(entry.candidateId, (current) => ({ ...current, [field]: value }))}
+                    fieldError={(field) => getFieldError(fieldErrors, `entries[${entryIndex}].${field}`, field)}
                   />
                 );
               })}
@@ -311,7 +341,7 @@ const ScoringPage = () => {
   );
 };
 
-const FragmentRows = ({ entry, suggestion, tooltip, readOnly, expanded, percent, onScore, onToggleFeedback, onFeedback }) => (
+const FragmentRows = ({ entry, suggestion, tooltip, readOnly, expanded, percent, onScore, onToggleFeedback, onFeedback, fieldError }) => (
   <>
     <tr className="hover:bg-slate-50/50">
       <th scope="row" className="sticky left-0 z-10 border-r border-slate-100 bg-white px-4 py-3 text-left font-bold text-navy">
@@ -356,6 +386,7 @@ const FragmentRows = ({ entry, suggestion, tooltip, readOnly, expanded, percent,
                 </button>
               )}
               {criterion.key === 'attendance' && !readOnly && <span className="text-[9px] text-slate-400">Suggestion only</span>}
+              {fieldError(`scores.${criterion.key}`) && <span role="alert" className="text-[10px] text-rose-700">{fieldError(`scores.${criterion.key}`)}</span>}
             </div>
           </td>
         );
@@ -391,6 +422,7 @@ const FragmentRows = ({ entry, suggestion, tooltip, readOnly, expanded, percent,
                   className="input"
                   placeholder={placeholder}
                 />
+                {fieldError(field) && <span role="alert" className="text-xs text-rose-700">{fieldError(field)}</span>}
                 <span className="mt-1 block text-right text-[10px] font-normal text-slate-400">{entry[field].length}/{feedbackLimit}</span>
               </label>
             ))}
