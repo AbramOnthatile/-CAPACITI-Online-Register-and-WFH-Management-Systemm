@@ -27,11 +27,8 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
     @Column(name = "role", nullable = false)
     private String role;
@@ -51,14 +48,7 @@ public class User extends BaseEntity {
     @Column(name = "active", nullable = false, columnDefinition = "boolean default true")
     private boolean active = true;
 
-    public String getFullName() {
-        String normalizedFirstName = firstName == null ? "" : firstName.trim();
-        String normalizedLastName = lastName == null ? "" : lastName.trim();
-        if (normalizedFirstName.isEmpty()) {
-            return normalizedLastName;
-        }
-        return normalizedLastName.isEmpty()
-                ? normalizedFirstName
-                : normalizedFirstName + " " + normalizedLastName;
+    public void setFullName(String fullName) {
+        this.fullName = fullName == null ? null : fullName.trim().replaceAll("\\s+", " ");
     }
 }

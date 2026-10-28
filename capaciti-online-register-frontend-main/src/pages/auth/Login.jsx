@@ -208,7 +208,7 @@ const Login = () => {
                 type="email"
                 autoComplete="email"
                 className="input text-xs"
-                placeholder="name@example.com"
+                placeholder="name@capaciti.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />

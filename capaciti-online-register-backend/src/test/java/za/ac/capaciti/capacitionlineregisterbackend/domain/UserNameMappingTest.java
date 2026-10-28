@@ -10,10 +10,9 @@ import za.ac.capaciti.capacitionlineregisterbackend.mappers.UserMapper;
 class UserNameMappingTest {
 
     @Test
-    void fullNameJoinsFirstAndLastNames() {
+    void fullNameIsMappedToTheDto() {
         User user = new User();
-        user.setFirstName("Ada");
-        user.setLastName("Lovelace");
+        user.setFullName("Ada Lovelace");
 
         UserDto dto = new UserMapper().toDto(user);
 
@@ -21,11 +20,10 @@ class UserNameMappingTest {
     }
 
     @Test
-    void fullNameDoesNotAddExtraWhitespaceWhenLastNameIsEmpty() {
+    void fullNameIsTrimmedAndInnerWhitespaceCollapsed() {
         User user = new User();
-        user.setFirstName("Ada");
-        user.setLastName("");
+        user.setFullName("  Ada   Lovelace ");
 
-        assertEquals("Ada", user.getFullName());
+        assertEquals("Ada Lovelace", user.getFullName());
     }
 }

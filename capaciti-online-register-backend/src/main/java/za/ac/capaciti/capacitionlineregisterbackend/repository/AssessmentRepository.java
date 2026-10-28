@@ -20,8 +20,8 @@ public interface AssessmentRepository extends JpaRepository<Assessment, UUID> {
             where (:mentorId is null or a.mentor.id = :mentorId)
               and (:type is null or a.type = :type)
               and (:status is null or a.status = :status)
-              and (:from is null or a.assessmentDate >= :from)
-              and (:to is null or a.assessmentDate <= :to)
+              and (cast(:from as LocalDate) is null or a.assessmentDate >= :from)
+              and (cast(:to as LocalDate) is null or a.assessmentDate <= :to)
             """)
     @EntityGraph(attributePaths = "mentor")
     Page<Assessment> search(
@@ -36,8 +36,8 @@ public interface AssessmentRepository extends JpaRepository<Assessment, UUID> {
             select a from Assessment a
             where a.status = za.ac.capaciti.capacitionlineregisterbackend.enums.AssessmentStatus.SUBMITTED
               and (:type is null or a.type = :type)
-              and (:from is null or a.assessmentDate >= :from)
-              and (:to is null or a.assessmentDate <= :to)
+              and (cast(:from as LocalDate) is null or a.assessmentDate >= :from)
+              and (cast(:to as LocalDate) is null or a.assessmentDate <= :to)
             """)
     Page<Assessment> searchSubmitted(
             @Param("type") AssessmentType type,

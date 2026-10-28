@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { clearApiToken, getApiToken, setApiToken } from '../api/client';
 import { useAuthApi } from '../api/hooks';
-import { removeMockValue } from '../mocks/storage';
 import { clearApiQueryCache } from '../api/hooks/queryClient';
 
 const AuthContext = createContext(null);
@@ -57,7 +56,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     clearApiToken({ redirect: false });
-    removeMockValue('session-user');
     clearApiQueryCache();
     setUser(null);
     setLoading(false);

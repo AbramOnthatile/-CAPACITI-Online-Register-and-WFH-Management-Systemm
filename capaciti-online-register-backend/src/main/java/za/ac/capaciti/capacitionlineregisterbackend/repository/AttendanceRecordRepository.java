@@ -36,8 +36,8 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     @Query(value = """
             SELECT a FROM AttendanceRecord a
             WHERE (:userId IS NULL OR a.user.id = :userId)
-              AND (:fromDate IS NULL OR a.attendanceDate >= :fromDate)
-              AND (:toDate IS NULL OR a.attendanceDate <= :toDate)
+              AND (cast(:fromDate as LocalDate) IS NULL OR a.attendanceDate >= :fromDate)
+              AND (cast(:toDate as LocalDate) IS NULL OR a.attendanceDate <= :toDate)
               AND (:workMode IS NULL OR a.workMode = :workMode)
               AND (:arrivalStatus IS NULL OR a.arrivalStatus = :arrivalStatus)
             ORDER BY a.attendanceDate DESC
@@ -45,8 +45,8 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
             countQuery = """
             SELECT COUNT(a) FROM AttendanceRecord a
             WHERE (:userId IS NULL OR a.user.id = :userId)
-              AND (:fromDate IS NULL OR a.attendanceDate >= :fromDate)
-              AND (:toDate IS NULL OR a.attendanceDate <= :toDate)
+              AND (cast(:fromDate as LocalDate) IS NULL OR a.attendanceDate >= :fromDate)
+              AND (cast(:toDate as LocalDate) IS NULL OR a.attendanceDate <= :toDate)
               AND (:workMode IS NULL OR a.workMode = :workMode)
               AND (:arrivalStatus IS NULL OR a.arrivalStatus = :arrivalStatus)
             """)

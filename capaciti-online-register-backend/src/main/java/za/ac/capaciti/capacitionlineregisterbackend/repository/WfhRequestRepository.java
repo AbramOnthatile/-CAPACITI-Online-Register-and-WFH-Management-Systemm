@@ -30,8 +30,8 @@ public interface WfhRequestRepository extends JpaRepository<WfhRequest, UUID> {
     @Query("select r from WfhRequest r " +
             "where (:status is null or r.status = :status) " +
             "and (:userId is null or r.user.id = :userId) " +
-            "and (:from is null or r.startDate >= :from) " +
-            "and (:to is null or r.endDate <= :to) " +
+            "and (cast(:from as LocalDate) is null or r.startDate >= :from) " +
+            "and (cast(:to as LocalDate) is null or r.endDate <= :to) " +
             "order by r.createdAt desc")
     @EntityGraph(attributePaths = {"user", "reviewedBy"})
     Page<WfhRequest> search(@Param("status") WfhStatus status,

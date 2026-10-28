@@ -24,13 +24,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findByRole(String role);
 
+    // CAST keeps PostgreSQL from typing a null :text as bytea.
     @Query("""
             SELECT u FROM User u
             WHERE (:role IS NULL OR u.role = :role)
               AND (:active IS NULL OR u.active = :active)
-              AND (:text IS NULL
-                   OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :text, '%')))
+              AND (CAST(:text AS String) IS NULL
+                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:text AS String), '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:text AS String), '%')))
             """)
     Page<User> searchUsers(
             @Param("role") String role,
@@ -43,9 +44,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             WHERE u.role = 'CANDIDATE'
               AND u.champion.id = :championId
               AND (:active IS NULL OR u.active = :active)
-              AND (:text IS NULL
-                   OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :text, '%')))
+              AND (CAST(:text AS String) IS NULL
+                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:text AS String), '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:text AS String), '%')))
             """)
     Page<User> searchCandidatesOfChampion(
             @Param("championId") UUID championId,

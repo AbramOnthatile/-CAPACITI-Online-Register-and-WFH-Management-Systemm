@@ -68,10 +68,10 @@ public class DemoDataSeeder implements ApplicationRunner {
 
         String encoded = passwordEncoder.encode(seedPassword);
         List<String> created = new ArrayList<>();
-        seedUser("admin@example.com", "Demo", "Admin", UserRole.ADMIN, campus, null, encoded, created);
-        User champion = seedUser("champ@example.com", "Demo", "Champion", UserRole.TECH_CHAMP, campus, null, encoded, created);
+        seedUser("admin@capaciti.com", "Demo Admin", UserRole.ADMIN, campus, null, encoded, created);
+        User champion = seedUser("champ@capaciti.com", "Demo Champion", UserRole.TECH_CHAMP, campus, null, encoded, created);
         for (int index = 1; index <= CANDIDATE_COUNT; index++) {
-            seedUser("candidate" + index + "@example.com", "Candidate", String.valueOf(index),
+            seedUser("candidate" + index + "@capaciti.com", "Candidate " + index,
                     UserRole.CANDIDATE, campus, champion, encoded, created);
         }
 
@@ -79,14 +79,13 @@ public class DemoDataSeeder implements ApplicationRunner {
                 created.size(), CANDIDATE_COUNT + 2 - created.size());
     }
 
-    private User seedUser(String email, String firstName, String lastName, UserRole role,
+    private User seedUser(String email, String fullName, UserRole role,
                           CampusHub campus, User champion, String passwordHash, List<String> created) {
         return userRepository.findByEmailIgnoreCase(email).orElseGet(() -> {
             User user = new User();
             user.setEmail(email);
             user.setPasswordHash(passwordHash);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
+            user.setFullName(fullName);
             user.setRole(role.name());
             user.setWorkMode(WorkMode.ON_SITE);
             user.setCampus(campus);

@@ -19,7 +19,7 @@ import {
 export const mockUsers: User[] = [
   {
     id: 'user-candidate-1',
-    email: 'candidate1@example.com',
+    email: 'candidate1@capaciti.com',
     fullName: 'Aphiwe Ndlovu',
     role: UserRole.CANDIDATE,
     defaultMode: WorkMode.ON_SITE,
@@ -31,7 +31,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-candidate-2',
-    email: 'candidate2@example.com',
+    email: 'candidate2@capaciti.com',
     fullName: 'Mpho Mokoena',
     role: UserRole.CANDIDATE,
     defaultMode: WorkMode.WFH,
@@ -43,7 +43,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-champion-1',
-    email: 'champ@example.com',
+    email: 'champ@capaciti.com',
     fullName: 'Lerato Dlamini',
     role: UserRole.TECH_CHAMP,
     defaultMode: WorkMode.ON_SITE,
@@ -55,7 +55,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'user-admin-1',
-    email: 'admin@example.com',
+    email: 'admin@capaciti.com',
     fullName: 'Musa Zulu',
     role: UserRole.ADMIN,
     defaultMode: WorkMode.ON_SITE,

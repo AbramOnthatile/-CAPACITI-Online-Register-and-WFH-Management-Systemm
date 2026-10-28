@@ -50,12 +50,10 @@ public class UserService implements IUserService {
             throw new ConflictException("EMAIL_ALREADY_EXISTS", "An account with this email already exists.");
         }
 
-        String[] name = splitFullName(request.fullName());
         User user = new User();
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.temporaryPassword()));
-        user.setFirstName(name[0]);
-        user.setLastName(name[1]);
+        user.setFullName(requireFullName(request.fullName()));
         user.setRole(request.role().name());
         user.setWorkMode(request.defaultMode());
         user.setCampus(resolveCampus(request.campusId()));
@@ -67,9 +65,7 @@ public class UserService implements IUserService {
     @Override
     public UserDto update(UUID id, UpdateUserRequest request) {
         User user = findUser(id);
-        String[] name = splitFullName(request.fullName());
-        user.setFirstName(name[0]);
-        user.setLastName(name[1]);
+        user.setFullName(requireFullName(request.fullName()));
         user.setWorkMode(request.defaultMode());
         user.setCampus(resolveCampus(request.campusId()));
         user.setChampion(resolveChampion(request.championId()));
@@ -136,11 +132,10 @@ public class UserService implements IUserService {
         return champion;
     }
 
-    private String[] splitFullName(String fullName) {
+    private String requireFullName(String fullName) {
         if (fullName == null || fullName.isBlank()) {
             throw new BadRequestException("Full name is required.");
         }
-        String[] parts = fullName.trim().split("\\s+", 2);
-        return new String[] { parts[0], parts.length > 1 ? parts[1] : "" };
+        return fullName;
     }
 }

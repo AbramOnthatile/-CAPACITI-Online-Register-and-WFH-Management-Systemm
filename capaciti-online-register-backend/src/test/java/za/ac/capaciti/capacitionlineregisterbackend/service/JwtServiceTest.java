@@ -62,10 +62,17 @@ class JwtServiceTest {
 
     @Test
     void expiredTokenThrowsOnExtractEmail() {
-        JwtService service = createService(SECRET, -1);
+        JwtService service = createService(SECRET, 15);
+        // A negative lifetime is rejected at startup, so backdate it after initialisation.
+        ReflectionTestUtils.setField(service, "expirationMinutes", -1L);
         String token = service.generateToken(user("candidate@example.com"));
 
         assertThrows(JwtException.class, () -> service.extractEmail(token));
+    }
+
+    @Test
+    void zeroExpirationThrowsIllegalStateException() {
+        assertThrows(IllegalStateException.class, () -> createService(SECRET, 0));
     }
 
     @Test
