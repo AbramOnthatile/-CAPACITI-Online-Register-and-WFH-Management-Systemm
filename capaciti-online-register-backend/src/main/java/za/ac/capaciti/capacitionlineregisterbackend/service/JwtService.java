@@ -21,12 +21,12 @@ import org.springframework.stereotype.Service;
 public class JwtService {
 
     private static final String INVALID_SECRET_MESSAGE =
-            "jwt.secret must be a Base64 value of at least 32 bytes";
+            "JWT_SECRET must be a Base64 value containing at least 32 random bytes";
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET:}")
     private String secret;
 
-    @Value("${jwt.expiration-minutes}")
+    @Value("${JWT_EXPIRATION_MINUTES:60}")
     private long expirationMinutes;
 
     private SecretKey key;
@@ -46,6 +46,9 @@ public class JwtService {
 
         if (decodedSecret.length < 32) {
             throw new IllegalStateException(INVALID_SECRET_MESSAGE);
+        }
+        if (expirationMinutes <= 0) {
+            throw new IllegalStateException("JWT_EXPIRATION_MINUTES must be greater than zero");
         }
 
         key = Keys.hmacShaKeyFor(decodedSecret);
