@@ -6,8 +6,6 @@ import {
   FileBarChart,
   Sliders,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { getStatusMetadata } from '../lib/status';
 import AppShell from './AppShell';
 
 const navItems = [
@@ -27,18 +25,14 @@ const getPageInfo = (path) => {
   return { title: 'Administration Console', subtitle: 'CAPACITI Workforce Management' };
 };
 
-export const AdminLayout = () => {
-  const { user } = useAuth();
-  return (
-    <AppShell
-      navItems={navItems}
-      homePath="/admin/dashboard"
-      accent="navy"
-      workspace={{ label: 'Administration', icon: Sliders, detail: user?.email }}
-      roleLabel={user ? getStatusMetadata(user.role).label : ''}
-      getPageInfo={getPageInfo}
-    />
-  );
-};
+export const AdminLayout = () => (
+  <AppShell
+    navItems={navItems}
+    homePath="/admin/dashboard"
+    accent="navy"
+    workspace={{ label: 'Administration', icon: Sliders, detail: 'Users, escalations and audit' }}
+    getPageInfo={getPageInfo}
+  />
+);
 
 export default AdminLayout;

@@ -9,8 +9,6 @@ import {
   Megaphone,
   ClipboardList,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { getStatusMetadata } from '../lib/status';
 import AppShell from './AppShell';
 
 const navItems = [
@@ -36,18 +34,14 @@ const getPageInfo = (path) => {
   return { title: 'Tech Champion Panel', subtitle: 'CAPACITI Workforce Management' };
 };
 
-export const ChampionLayout = () => {
-  const { user } = useAuth();
-  return (
-    <AppShell
-      navItems={navItems}
-      homePath="/champion/dashboard"
-      accent="navy"
-      workspace={{ label: 'Tech Champion', icon: ShieldCheck, detail: 'Managing your assigned cohort' }}
-      roleLabel={user ? getStatusMetadata(user.role).label : ''}
-      getPageInfo={getPageInfo}
-    />
-  );
-};
+export const ChampionLayout = () => (
+  <AppShell
+    navItems={navItems}
+    homePath="/champion/dashboard"
+    accent="navy"
+    workspace={{ label: 'Tech Champion', icon: ShieldCheck, detail: 'Managing your assigned cohort' }}
+    getPageInfo={getPageInfo}
+  />
+);
 
 export default ChampionLayout;

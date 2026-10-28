@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Award, Bell, ChevronRight, History, LifeBuoy, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import Avatar from '../../components/common/Avatar';
+import SignOutDialog from '../../components/common/SignOutDialog';
 
 const groups = [
   {
@@ -25,9 +27,11 @@ const MorePage = () => {
   const { user, logout } = useAuth();
   const { notifications } = useApp();
   const navigate = useNavigate();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const unread = notifications.filter((item) => !item.read).length;
 
   const handleSignOut = () => {
+    setConfirmSignOut(false);
     logout();
     navigate('/login');
   };
@@ -65,9 +69,11 @@ const MorePage = () => {
         </section>
       ))}
 
-      <button type="button" onClick={handleSignOut} className="btn btn-danger btn-block">
+      <button type="button" onClick={() => setConfirmSignOut(true)} className="btn btn-danger btn-block">
         <LogOut className="h-4 w-4" />Sign out
       </button>
+
+      {confirmSignOut && <SignOutDialog onCancel={() => setConfirmSignOut(false)} onConfirm={handleSignOut} />}
     </div>
   );
 };
