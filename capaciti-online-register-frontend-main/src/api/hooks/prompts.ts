@@ -4,6 +4,7 @@ import {
   PromptStatus,
   type DailyPrompt,
   type PromptCollection,
+  type PromptReview,
   type PromptSubmission,
   type PromptSubmissionResult,
 } from '../types';
@@ -16,7 +17,24 @@ export const promptKeys = {
   root: ['prompts'] as const,
   today: (userId?: string) => ['prompts', 'today', userId ?? 'current'] as const,
   active: (userId?: string) => ['prompts', 'active', userId ?? 'current'] as const,
+  review: (date: string) => ['prompts', 'review', date] as const,
 };
+
+// Champions and admins: candidates' check-ins for one day. Mock mode has no review data.
+export function usePromptReviewsApi(date: string, enabled = true) {
+  const query = useApiQuery<PromptReview[]>(
+    promptKeys.review(date),
+    () => apiClient.get<PromptReview[]>(`/prompts/review?date=${encodeURIComponent(date)}`),
+    () => [],
+    { enabled },
+  );
+  return {
+    data: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error,
+    refresh: async () => { await query.refetch(); },
+  };
+}
 
 const draftId = () => globalThis.crypto?.randomUUID?.() ?? `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 

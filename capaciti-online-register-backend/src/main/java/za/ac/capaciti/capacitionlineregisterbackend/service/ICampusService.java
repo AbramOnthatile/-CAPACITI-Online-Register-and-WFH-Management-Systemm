@@ -11,9 +11,9 @@ public interface ICampusService {
 
     List<CampusDto> list();
 
-    CampusDto update(UUID id, UpdateCampusRequest request, String actorEmail);
+    CampusDto update(UUID id, UpdateCampusRequest request, String actorEmail, String confirmPassword);
 
-    CampusDto addCurrentIp(UUID id, HttpServletRequest request, String actorEmail);
+    CampusDto addCurrentIp(UUID id, HttpServletRequest request, String actorEmail, String confirmPassword);
 
-    CampusDto removeCidr(UUID id, String cidr, String actorEmail);
+    CampusDto removeCidr(UUID id, String cidr, String actorEmail, String confirmPassword);
 }

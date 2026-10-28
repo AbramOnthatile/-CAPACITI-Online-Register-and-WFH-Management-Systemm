@@ -29,6 +29,7 @@ import UserManagement from './pages/admin/UserManagement';
 import BlockersTickets from './pages/admin/BlockersTickets';
 import AuditLog from './pages/admin/AuditLog';
 import AdminReports from './pages/admin/Reports';
+import CampusSettings from './pages/admin/CampusSettings';
 import ErrorPage from './pages/ErrorPage';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import { useAuth } from './context/AuthContext';
@@ -113,6 +114,7 @@ function App() {
           <Route path="escalations" element={<BlockersTickets />} />
           <Route path="audit-log" element={<AuditLog />} />
           <Route path="reports" element={<AdminReports />} />
+          <Route path="campus" element={<CampusSettings />} />
         </Route>
       </Route>
 

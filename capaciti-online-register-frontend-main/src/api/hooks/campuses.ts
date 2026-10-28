@@ -7,6 +7,9 @@ import { useApiMutation, useApiQuery } from './shared';
 
 export const campusesQueryKey = ['campuses'] as const;
 
+// Campus changes are confirmed with the admin's password (checked by the backend).
+const confirmed = (password: string) => ({ headers: { 'X-Confirm-Password': password } });
+
 export function useCampusesApi(enabled = true) {
   const query = useApiQuery(
     campusesQueryKey,
@@ -15,9 +18,9 @@ export function useCampusesApi(enabled = true) {
     { enabled },
   );
 
-  const updateMutation = useApiMutation<CampusHub, { id: string; request: UpdateCampusRequest }>(
-    async ({ id, request }) => {
-      if (!useMocks) return apiClient.put<CampusHub>(`/campuses/${id}`, request);
+  const updateMutation = useApiMutation<CampusHub, { id: string; request: UpdateCampusRequest; password: string }>(
+    async ({ id, request, password }) => {
+      if (!useMocks) return apiClient.put<CampusHub>(`/campuses/${id}`, request, confirmed(password));
       const campuses = readMockCollection('campuses', mockCampuses);
       const updated = campuses.find((campus) => campus.id === id);
       if (!updated) throw new Error('The campus could not be found.');
@@ -28,9 +31,9 @@ export function useCampusesApi(enabled = true) {
     [campusesQueryKey],
   );
 
-  const whitelistCurrentIpMutation = useApiMutation<CampusHub, string>(
-    async (id) => {
-      if (!useMocks) return apiClient.post<CampusHub>(`/campuses/${id}/whitelist/current-ip`);
+  const whitelistCurrentIpMutation = useApiMutation<CampusHub, { id: string; password: string }>(
+    async ({ id, password }) => {
+      if (!useMocks) return apiClient.post<CampusHub>(`/campuses/${id}/whitelist/current-ip`, undefined, confirmed(password));
       const campuses = readMockCollection('campuses', mockCampuses);
       const campus = campuses.find((item) => item.id === id);
       if (!campus) throw new Error('The campus could not be found.');
@@ -41,9 +44,9 @@ export function useCampusesApi(enabled = true) {
     [campusesQueryKey],
   );
 
-  const removeWhitelistMutation = useApiMutation<CampusHub, { id: string; cidr: string }>(
-    async ({ id, cidr }) => {
-      if (!useMocks) return apiClient.delete<CampusHub>(`/campuses/${id}/whitelist?cidr=${encodeURIComponent(cidr)}`);
+  const removeWhitelistMutation = useApiMutation<CampusHub, { id: string; cidr: string; password: string }>(
+    async ({ id, cidr, password }) => {
+      if (!useMocks) return apiClient.delete<CampusHub>(`/campuses/${id}/whitelist?cidr=${encodeURIComponent(cidr)}`, confirmed(password));
       const campuses = readMockCollection('campuses', mockCampuses);
       const campus = campuses.find((item) => item.id === id);
       if (!campus) throw new Error('The campus could not be found.');
@@ -59,8 +62,8 @@ export function useCampusesApi(enabled = true) {
     data: query.data ?? [],
     loading: query.isLoading,
     error: query.error,
-    update: (id: string, request: UpdateCampusRequest) => updateMutation.mutateAsync({ id, request }),
-    whitelistCurrentIp: whitelistCurrentIpMutation.mutateAsync,
-    removeWhitelist: (id: string, cidr: string) => removeWhitelistMutation.mutateAsync({ id, cidr }),
+    update: (id: string, request: UpdateCampusRequest, password: string) => updateMutation.mutateAsync({ id, request, password }),
+    whitelistCurrentIp: (id: string, password: string) => whitelistCurrentIpMutation.mutateAsync({ id, password }),
+    removeWhitelist: (id: string, cidr: string, password: string) => removeWhitelistMutation.mutateAsync({ id, cidr, password }),
   };
 }

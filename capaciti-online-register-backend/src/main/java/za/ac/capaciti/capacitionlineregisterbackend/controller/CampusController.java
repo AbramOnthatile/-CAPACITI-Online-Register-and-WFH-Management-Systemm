@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.campus.CampusDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.campus.UpdateCampusRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.service.ICampusService;
+import za.ac.capaciti.capacitionlineregisterbackend.service.PasswordConfirmationService;
 
 @RestController
 @RequestMapping("/api/v1/campuses")
@@ -43,8 +45,9 @@ public class CampusController {
     public ResponseEntity<CampusDto> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateCampusRequest request,
+            @RequestHeader(value = PasswordConfirmationService.HEADER, required = false) String confirmPassword,
             Authentication authentication) {
-        return ResponseEntity.ok(campusService.update(id, request, authentication.getName()));
+        return ResponseEntity.ok(campusService.update(id, request, authentication.getName(), confirmPassword));
     }
 
     @PostMapping("/{id}/whitelist/current-ip")
@@ -52,8 +55,9 @@ public class CampusController {
     public ResponseEntity<CampusDto> addCurrentIp(
             @PathVariable UUID id,
             HttpServletRequest request,
+            @RequestHeader(value = PasswordConfirmationService.HEADER, required = false) String confirmPassword,
             Authentication authentication) {
-        return ResponseEntity.ok(campusService.addCurrentIp(id, request, authentication.getName()));
+        return ResponseEntity.ok(campusService.addCurrentIp(id, request, authentication.getName(), confirmPassword));
     }
 
     @DeleteMapping("/{id}/whitelist")
@@ -61,7 +65,8 @@ public class CampusController {
     public ResponseEntity<CampusDto> removeCidr(
             @PathVariable UUID id,
             @RequestParam String cidr,
+            @RequestHeader(value = PasswordConfirmationService.HEADER, required = false) String confirmPassword,
             Authentication authentication) {
-        return ResponseEntity.ok(campusService.removeCidr(id, cidr, authentication.getName()));
+        return ResponseEntity.ok(campusService.removeCidr(id, cidr, authentication.getName(), confirmPassword));
     }
 }

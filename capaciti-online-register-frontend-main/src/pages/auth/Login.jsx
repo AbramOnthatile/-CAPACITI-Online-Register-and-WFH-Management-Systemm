@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn, Sparkles, Shield, GraduationCap, Award } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole, WfhStatus } from '../../api/types';
-import StatusBadge from '../../components/common/StatusBadge';
+import { UserRole } from '../../api/types';
 import { demoOnly } from '../../mocks/demoOnly';
 import { useMocks } from '../../api/mockMode';
-import { useApp } from '../../context/AppContext';
-import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
+import { ApiError, getFieldError, getUserErrorMessage } from '../../api/client';
 
 const rolePath = {
   [UserRole.CANDIDATE]: '/candidate/dashboard',
@@ -21,17 +19,8 @@ const iconByRole = {
 };
 const Login = () => {
   const navigate = useNavigate();
-  const { user, login, loading: authLoading, error: authError, refreshSession } = useAuth();
-  const { users } = useApp();
-  const demoAccounts = demoOnly.demoAccounts.map((account) => {
-    const currentUser = users.find((item) => item.role === account.role);
-    return {
-      ...account,
-      email: currentUser?.email ?? account.email,
-      name: currentUser?.fullName ?? account.name,
-      icon: iconByRole[account.role],
-    };
-  });
+  const { user, login, loading: authLoading, error: authError } = useAuth();
+  const demoAccounts = demoOnly.demoAccounts.map((account) => ({ ...account, icon: iconByRole[account.role] }));
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,7 +61,6 @@ const Login = () => {
     } catch (loginError) {
       setErrors({
         form: getUserErrorMessage(loginError, 'Sign in failed.'),
-        retryable: canRetryError(loginError),
         ...(loginError instanceof ApiError ? loginError.fieldErrors : {}),
       });
     } finally {
@@ -80,11 +68,15 @@ const Login = () => {
     }
   };
 
-  // Live mode only fills the email; the demo password is typed, never stored in the frontend.
+  // One feedback line: this sign-in's error, or a failed session check when there is none.
+  const feedback = errors.form ?? authError?.message;
+
+  // Signs straight in with the seeded demo password; without one configured it only fills the email.
   const handleDemoLogin = (email) => {
+    const password = useMocks ? 'mock' : demoOnly.password;
     setForm({ email, password: '' });
     setErrors({});
-    if (useMocks) void authenticate(email, 'mock');
+    if (password) void authenticate(email, password);
   };
 
   return (
@@ -135,9 +127,12 @@ const Login = () => {
                     type="button"
                     disabled={loading || authLoading}
                     aria-disabled={loading || authLoading}
-                    title={!useMocks ? demoOnly.notice : undefined}
+                    title={!useMocks && !demoOnly.password ? demoOnly.notice : undefined}
                     onClick={() => handleDemoLogin(acc.email)}
-                    className="group flex w-full items-center justify-between rounded-xl bg-white/10 p-2.5 text-xs text-white hover:bg-white/20 transition-all text-left"
+                    aria-pressed={form.email === acc.email}
+                    className={`group flex w-full items-center justify-between rounded-xl p-2.5 text-xs text-white transition-all text-left ring-1 ${
+                      form.email === acc.email ? 'bg-white/20 ring-white/60' : 'bg-white/10 ring-transparent hover:bg-white/20'
+                    }`}
                   >
                     {/* MOCK-ONLY: not in backend */}
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -146,11 +141,9 @@ const Login = () => {
                       </div>
                       <div className="min-w-0 truncate">
                         <p className="font-bold leading-tight truncate">{acc.name}</p>
-                        <p className="text-[10px] text-slate-300 truncate">{acc.title} · {acc.tag}</p>
+                        <p className="text-[10px] text-slate-300 truncate">{acc.email}</p>
                       </div>
                     </div>
-                    {/* MOCK-ONLY: not in backend */}
-                    <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
                   </button>
                 );
               })}
@@ -161,42 +154,10 @@ const Login = () => {
         {/* Right Form Panel */}
         <div className="p-8 sm:p-10 md:col-span-7 flex flex-col justify-center">
           <div className="mb-6">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#6115D0]">
-              Standard Sign In
-            </span>
-            <h2 className="mt-1 text-2xl font-black text-[#1D2951]">Welcome Back</h2>
+            <h2 className="text-2xl font-black text-[#1D2951]">Welcome Back</h2>
             <p className="mt-1 text-xs text-slate-500">
               Enter your account credentials to sign in.
             </p>
-          </div>
-          {authError && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{authError.message}</p>}
-          {canRetryError(authError) && <button type="button" className="btn btn-secondary btn-sm mb-4" disabled={authLoading} onClick={() => void refreshSession()}>Retry</button>}
-
-          {/* Quick preset selector chips */}
-          <div className="mb-6">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-              Demo account presets:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.role}
-                  type="button"
-                  title={!useMocks ? demoOnly.notice : undefined}
-                  onClick={() => {
-                    setForm({ email: acc.email, password: '' });
-                    setErrors({});
-                  }}
-                  className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
-                    form.email === acc.email
-                      ? 'border-[#6115D0] bg-[#6115D0] text-white shadow-sm'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  {acc.title} <StatusBadge status={WfhStatus.PENDING}>Demo</StatusBadge>
-                </button>
-              ))}
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -242,20 +203,10 @@ const Login = () => {
               {(getFieldError(errors, 'password') || errors.password) && <p className="mt-1 text-xs font-medium text-rose-600">{getFieldError(errors, 'password') || errors.password}</p>}
             </div>
 
-            {errors.form && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
-                {errors.form}
+            {feedback && (
+              <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+                {feedback}
               </div>
-            )}
-            {errors.retryable && (
-              <button
-                type="button"
-                disabled={loading || authLoading}
-                onClick={() => void authenticate(form.email, form.password)}
-                className="btn btn-secondary btn-sm"
-              >
-                Retry
-              </button>
             )}
 
             <button
@@ -267,12 +218,6 @@ const Login = () => {
               <span>{authLoading ? 'Checking session...' : loading ? 'Authenticating...' : 'Sign In to Portal'}</span>
             </button>
           </form>
-
-          <div className="mt-8 border-t border-slate-100 pt-4 text-center">
-            <p className="text-[11px] text-slate-400">
-              CAPACITI Workforce Management System · A Division of UVU Africa
-            </p>
-          </div>
         </div>
       </div>
     </main>

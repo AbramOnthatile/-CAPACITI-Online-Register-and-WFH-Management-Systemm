@@ -70,7 +70,7 @@ const Profile = () => {
           </dl>
         </section>
 
-        <div className="lg:col-span-8">
+        <div className="min-w-0 lg:col-span-8">
           <Card title="Account information" subtitle="Update your account and contact details">
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">

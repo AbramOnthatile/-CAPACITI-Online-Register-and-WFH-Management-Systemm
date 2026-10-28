@@ -3,6 +3,7 @@ package za.ac.capaciti.capacitionlineregisterbackend.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -15,9 +16,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.Assessment;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.Notification;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.ScorecardEntry;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.scorecard.CreateAssessmentRequest;
@@ -32,6 +35,7 @@ import za.ac.capaciti.capacitionlineregisterbackend.exception.ResourceNotFoundEx
 import za.ac.capaciti.capacitionlineregisterbackend.mappers.ScorecardMapper;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.AssessmentRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.AttendanceRecordRepository;
+import za.ac.capaciti.capacitionlineregisterbackend.repository.NotificationRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.ScorecardEntryRepository;
 import za.ac.capaciti.capacitionlineregisterbackend.repository.UserRepository;
 
@@ -62,6 +66,9 @@ class AssessmentServiceTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private NotificationRepository notificationRepository;
+
     private AssessmentService service;
 
     @BeforeEach
@@ -73,7 +80,8 @@ class AssessmentServiceTest {
                 attendanceRecordRepository,
                 scorecardMapper,
                 scoreCalculator,
-                auditService);
+                auditService,
+                notificationRepository);
     }
 
     @Test
@@ -153,6 +161,38 @@ class AssessmentServiceTest {
 
         assertEquals("ASSESSMENT_INCOMPLETE", exception.getCode());
         assertEquals("attendance", exception.getFieldErrors().get(candidate.getId().toString()));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void submittingTellsEachCandidateTheirScorecardIsReady() {
+        User mentor = mentor();
+        User candidate = candidate(mentor);
+        Assessment assessment = assessment(AssessmentStatus.DRAFT, mentor);
+        assessment.setTitle("Week 3 review");
+        ScorecardEntry entry = entry(assessment, candidate);
+        entry.setAttendanceScore(4);
+        entry.setCommunicationScore(4);
+        entry.setAccountabilityScore(4);
+        entry.setCreativityScore(4);
+        entry.setDeliveryScore(4);
+        entry.setTechSkillsScore(4);
+        entry.setOverallPercent(80);
+        when(userRepository.findByEmailIgnoreCase(MENTOR_EMAIL)).thenReturn(Optional.of(mentor));
+        when(assessmentRepository.findWithMentorById(assessment.getId()))
+                .thenReturn(Optional.of(assessment));
+        when(scorecardEntryRepository.findByAssessmentId(assessment.getId()))
+                .thenReturn(List.of(entry));
+
+        service.submit(assessment.getId(), MENTOR_EMAIL);
+
+        ArgumentCaptor<List<Notification>> sent = ArgumentCaptor.forClass(List.class);
+        verify(notificationRepository).saveAll(sent.capture());
+        Notification notification = sent.getValue().get(0);
+        assertEquals(candidate, notification.getRecipient());
+        assertEquals("Your scorecard is ready", notification.getTitle());
+        assertTrue(notification.getMessage().contains("Week 3 review"));
+        assertTrue(notification.getMessage().contains("80% overall"));
     }
 
     @Test

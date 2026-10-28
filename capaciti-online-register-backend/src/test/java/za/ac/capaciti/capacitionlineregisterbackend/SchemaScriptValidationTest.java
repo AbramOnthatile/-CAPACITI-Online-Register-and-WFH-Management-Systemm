@@ -111,6 +111,8 @@ class SchemaScriptValidationTest {
         assessmentRepository.searchSubmitted(AssessmentType.PROJECT, today, today, page);
         dailyPromptRepository.findDueToActivate(now);
         dailyPromptRepository.findOverdue(now);
+        dailyPromptRepository.findForReview(today);
+        dailyPromptRepository.findForReviewByChampion(today, userRepository.findAll().stream().findFirst().orElse(null));
         reportRepository.countActiveCandidates();
         reportRepository.arrivalStatusCounts(today, today);
         reportRepository.departureStatusCounts(today, today);

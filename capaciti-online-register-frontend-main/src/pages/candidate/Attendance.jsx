@@ -4,6 +4,7 @@ import { Clock, Coffee, UtensilsCrossed, Building2, Home, History, ChevronRight 
 import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../api/client';
 import { WorkMode } from '../../api/types';
 import { useApp } from '../../context/AppContext';
+import { useCheckInGate } from '../../features/candidate/checkins/CheckInGate';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -20,6 +21,11 @@ const formatSast = (value) => formatSastTime(value);
 const Attendance = () => {
   const { user } = useAuth();
   const { attendanceToday, attendanceLoading, attendanceError, clockIn, clockOut, startBreak, endBreak, isDemoMode, refreshAttendance } = useApp();
+  const { requestEod } = useCheckInGate();
+  // The end-of-day form comes first; cancelling it keeps the candidate clocked in.
+  const startClockOut = async () => {
+    if (await requestEod('clock-out') !== 'cancelled') setConfirmation('clock-out');
+  };
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
   const [qualityMessage, setQualityMessage] = useState('');
@@ -81,7 +87,8 @@ const Attendance = () => {
             setError('Enter the reason requested by the server.');
             return;
           }
-          request = { ...request, earlyClockoutReason: actionReason.trim() };
+          // The server keeps whichever one applies: an early-departure reason or a late clock-out note.
+          request = { ...request, earlyClockoutReason: actionReason.trim(), lateClockoutNote: actionReason.trim() };
           setActionRequest(request);
         }
         result = await clockOut(request);
@@ -89,7 +96,7 @@ const Attendance = () => {
 
       if (result?.requiresReason) {
         setRequiresReason(true);
-        setQualityMessage(result.quality.feedbackMessage ?? '');
+        setQualityMessage(result.quality?.feedbackMessage ?? '');
         return;
       }
       if (result?.quality?.accepted === false) {
@@ -201,7 +208,7 @@ const Attendance = () => {
                     <ClockButton
                       action="clock-out"
                       pending={working}
-                      onClick={() => setConfirmation('clock-out')}
+                      onClick={() => void startClockOut()}
                       className="btn btn-dark"
                       iconClassName="h-4 w-4"
                     />

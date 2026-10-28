@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import za.ac.capaciti.capacitionlineregisterbackend.config.DemoAccounts;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.AttendanceRecord;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.CampusHub;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.User;
@@ -56,6 +58,8 @@ class AttendanceServiceTest {
     @Mock private AuditService auditService;
     @Mock private NotificationRepository notificationRepository;
     @Mock private HttpServletRequest http;
+    @Mock private IPromptGeneratorService promptGeneratorService;
+    @Mock private IPromptService promptService;
 
     private AttendanceService service;
     private User user;
@@ -66,7 +70,8 @@ class AttendanceServiceTest {
         service = new AttendanceService(
                 attendanceRecordRepository, userRepository, wfhRequestRepository, statusEngine,
                 new IpWhitelistService(""), new LocationVerificationService(), qualityGateService,
-                new AttendanceMapper(), auditService, notificationRepository);
+                new AttendanceMapper(), auditService, notificationRepository, promptGeneratorService, promptService,
+                new DemoAccounts(true));
         campus = CampusHub.builder().name("Campus").latitude(-33.9249).longitude(18.4241).radiusM(300)
                 .whitelistedCidrs(List.of("196.0.0.0/24")).build();
         user = new User();
@@ -74,7 +79,7 @@ class AttendanceServiceTest {
         user.setEmail(EMAIL);
         user.setRole("CANDIDATE");
         user.setCampus(campus);
-        when(userRepository.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(user));
+        lenient().when(userRepository.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(user));
     }
 
     private void stubSave() {
@@ -112,6 +117,7 @@ class AttendanceServiceTest {
         assertFalse(response.attendance().ipVerified());
         assertTrue(response.attendance().geoVerified());
         assertTrue(response.attendance().distanceM() < 300);
+        verify(promptGeneratorService).generateOnClockIn(any(AttendanceRecord.class));
     }
 
     @Test
@@ -180,5 +186,48 @@ class AttendanceServiceTest {
         assertEquals(ArrivalStatus.LATE_UNEXCUSED, response.attendance().arrivalStatus());
         assertEquals("traffic", response.attendance().lateReason());
         assertTrue(response.attendance().aiQualityFlag());
+    }
+
+    private User demoCandidate() {
+        User demo = new User();
+        demo.setId(UUID.randomUUID());
+        demo.setEmail("candidate1@capaciti.com");
+        demo.setRole("CANDIDATE");
+        demo.setCampus(campus);
+        when(userRepository.findByEmailIgnoreCase(demo.getEmail())).thenReturn(Optional.of(demo));
+        when(attendanceRecordRepository.findByUserAndAttendanceDate(eq(demo), any())).thenReturn(Optional.empty());
+        when(attendanceRecordRepository.saveAndFlush(any(AttendanceRecord.class))).thenAnswer(invocation -> {
+            AttendanceRecord record = invocation.getArgument(0);
+            record.setId(UUID.randomUUID());
+            return record;
+        });
+        return demo;
+    }
+
+    @Test
+    void demoAccountClocksInLateFromAnywhereWithoutAReason() {
+        User demo = demoCandidate();
+        when(statusEngine.arrivalStatusAtAnyHour(any(Instant.class))).thenReturn(ArrivalStatus.LATE_UNEXCUSED);
+        when(http.getRemoteAddr()).thenReturn("41.1.1.1");
+
+        AttendanceActionResponse response = service.clockIn(demo.getEmail(),
+                new ClockInRequest("d1", WorkMode.ON_SITE, null, FAR_LAT, FAR_LON, 10.0), http);
+
+        assertEquals(ArrivalStatus.LATE_UNEXCUSED, response.attendance().arrivalStatus());
+        assertFalse(response.attendance().ipVerified());
+        assertFalse(response.attendance().geoVerified());
+        verify(statusEngine, never()).arrivalStatusFor(any(Instant.class), eq(false));
+    }
+
+    @Test
+    void demoAccountClocksInFromHomeWithoutAnApprovedRequest() {
+        User demo = demoCandidate();
+        when(statusEngine.arrivalStatusAtAnyHour(any(Instant.class))).thenReturn(ArrivalStatus.ON_TIME);
+        when(wfhRequestRepository.findApprovedCoveringForUser(eq(demo), any(LocalDate.class))).thenReturn(List.of());
+
+        AttendanceActionResponse response = service.clockIn(demo.getEmail(),
+                new ClockInRequest("d1", WorkMode.WFH, null, null, null, null), http);
+
+        assertEquals(WorkMode.WFH, response.attendance().workMode());
     }
 }

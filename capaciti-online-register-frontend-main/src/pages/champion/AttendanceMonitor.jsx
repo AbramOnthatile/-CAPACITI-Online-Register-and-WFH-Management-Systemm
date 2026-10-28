@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Download, Search, Clock3 } from 'lucide-react';
+import { Search, Clock3 } from 'lucide-react';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
 import { ArrivalStatus, DepartureStatus } from '../../api/types';
 import { downloadCsv } from '../../lib/downloadCsv';
+import { downloadPdf } from '../../lib/downloadPdf';
+import ExportButtons from '../../components/common/ExportButtons';
 import { getStatusMetadata } from '../../lib/status';
 import { useAttendanceApi } from '../../api/hooks';
 import { Skeleton, ErrorState } from '../../components/common/RequestState';
@@ -34,17 +36,34 @@ const AttendanceMonitor = () => {
     return nameMatch;
   }), [attendance, search]);
 
-  const exportCsv = () => downloadCsv('daily-attendance-register.csv', rows.map((record) => ({
-    candidate: record.userName,
-    date: record.attendanceDate,
-    workMode: record.workMode,
-    arrival: record.arrivalStatus,
-    clockIn: formatTime(record.clockInAt),
-    teaBreaks: breakTimes(record, 'TEA'),
-    lunchBreaks: breakTimes(record, 'LUNCH'),
-    clockOut: formatTime(record.clockOutAt),
-    departure: record.departureStatus ?? '',
-  })), ['candidate', 'date', 'workMode', 'arrival', 'clockIn', 'teaBreaks', 'lunchBreaks', 'clockOut', 'departure']);
+  // One column list for both exports, with readable labels.
+  const label = (status) => (status ? getStatusMetadata(status)?.label ?? status : '');
+  const columns = [
+    ['Candidate', (record) => record.userName],
+    ['Date', (record) => formatSastDate(record.attendanceDate)],
+    ['Work mode', (record) => label(record.workMode)],
+    ['Arrival', (record) => label(record.arrivalStatus)],
+    ['Clock in', (record) => formatTime(record.clockInAt)],
+    ['Tea breaks', (record) => breakTimes(record, 'TEA')],
+    ['Lunch breaks', (record) => breakTimes(record, 'LUNCH')],
+    ['Clock out', (record) => formatTime(record.clockOutAt)],
+    ['Departure', (record) => label(record.departureStatus)],
+  ];
+  const exportCsv = () => downloadCsv('attendance-register.csv',
+    rows.map((record) => Object.fromEntries(columns.map(([header, value]) => [header, value(record)]))),
+    columns.map(([header]) => header));
+  const exportPdf = () => downloadPdf({
+    filename: 'attendance-register.pdf',
+    title: 'Attendance register',
+    subtitle: search ? `Candidates matching "${search}"` : 'Your assigned candidates',
+    summary: [
+      { label: 'Records', value: rows.length },
+      { label: 'Clocked in', value: rows.filter((record) => record.clockInAt).length },
+      { label: 'Late arrivals', value: rows.filter((record) => record.arrivalStatus?.startsWith('LATE')).length },
+      { label: 'Working from home', value: rows.filter((record) => record.workMode === 'WFH').length },
+    ],
+    tables: [{ heading: 'Register', columns: columns.map(([header]) => header), rows: rows.map((record) => columns.map(([, value]) => value(record))) }],
+  });
 
   const emptyMessage = attendanceLoading ? 'Loading attendance...' : 'No attendance records match the selected filter.';
 
@@ -53,7 +72,7 @@ const AttendanceMonitor = () => {
       <PageHeader
         eyebrow="Daily register"
         title="Live attendance monitor"
-        actions={<button type="button" onClick={exportCsv} className="btn btn-secondary"><Download className="h-4 w-4" />Export register</button>}
+        actions={<ExportButtons onPdf={exportPdf} onCsv={exportCsv} disabled={!rows.length} />}
       />
 
       <div className="surface surface-pad space-y-3">
@@ -75,8 +94,8 @@ const AttendanceMonitor = () => {
       {canRetryError(attendanceError) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void refresh()}>Retry</button>}
       {attendanceLoading && <Skeleton label="Loading attendance monitor" />}
 
-      {/* Phones */}
-      <ul className="list md:hidden">
+      {/* Phones & tablets */}
+      <ul className="list lg:hidden">
         {rows.map((record) => (
           <li key={record.id} className="surface p-4">
             <div className="flex items-center gap-3">
@@ -96,8 +115,8 @@ const AttendanceMonitor = () => {
         {!attendanceLoading && !rows.length && <li><EmptyState icon={Clock3} description={emptyMessage} /></li>}
       </ul>
 
-      {/* Tablet & desktop */}
-      <div className="surface hidden overflow-hidden md:block">
+      {/* Desktop */}
+      <div className="surface hidden overflow-hidden lg:block">
         <div className="table-wrap">
           <table className="table">
             <thead>

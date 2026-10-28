@@ -221,20 +221,37 @@ export interface DailyPrompt {
   response: Record<string, unknown> | null;
 }
 
+export interface PromptReview {
+  id: string;
+  userId: string;
+  userName: string;
+  stage: PromptStage;
+  promptDate: string;
+  status: PromptStatus;
+  submittedAt: string | null;
+  aiQualityFlag: boolean;
+  response: Record<string, unknown> | null;
+}
+
 export interface PromptCollection {
   serverTime: string;
   prompts: DailyPrompt[];
 }
 
+export interface PromptTask {
+  title: string;
+  status?: 'DONE' | 'ON_TRACK' | 'DELAYED' | 'BLOCKED';
+}
+
+// Morning: tasks (titles) plus WFH readiness; midday and end of day: every task with a status.
 export interface PromptSubmission {
   draftKey: string;
-  deliverables: string[] | null;
-  standupConfirmed: boolean | null;
-  powerStatus: string | null;
-  ispStatus: string | null;
-  progressStatus: string | null;
-  blockerNote: string | null;
-  workLink: string | null;
+  tasks: PromptTask[];
+  standupConfirmed?: boolean;
+  powerStatus?: string;
+  ispStatus?: string;
+  blockerNote?: string;
+  note?: string;
 }
 
 export interface QualityResult {

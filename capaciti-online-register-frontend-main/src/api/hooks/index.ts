@@ -3,7 +3,7 @@ export { useUsersApi, usersQueryKey, type UsersQueryParams } from './users';
 export { useCampusesApi, campusesQueryKey } from './campuses';
 export { useAttendanceApi, attendanceKeys, type AttendanceQueryParams } from './attendance';
 export { useWfhRequestsApi, wfhKeys, type WfhQueryParams } from './wfh';
-export { usePromptsApi, promptKeys, getPromptCollection } from './prompts';
+export { usePromptsApi, usePromptReviewsApi, promptKeys, getPromptCollection } from './prompts';
 export { useTicketsApi, ticketKeys, type TicketsQueryParams } from './tickets';
 export { useNotificationsApi, notificationKeys } from './notifications';
 export { useDashboardApi, dashboardKeys } from './dashboard';

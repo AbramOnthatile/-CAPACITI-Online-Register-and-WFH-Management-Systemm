@@ -64,7 +64,7 @@ public class QualityGateService implements IQualityGateService {
 
     private String describe(QualityContext context) {
         return switch (context) {
-            case PROMPT -> "daily work deliverables or a progress note for a work-from-home check-in";
+            case PROMPT -> "a list of the day's work tasks or a progress note for a daily check-in";
             case LATE_REASON -> "reason for arriving late to work";
             case EARLY_CLOCKOUT -> "reason for clocking out before 16:00";
             case CLOCKOUT_NOTE -> "short note explaining why the person clocked out after 16:20";

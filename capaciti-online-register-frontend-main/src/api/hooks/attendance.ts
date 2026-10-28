@@ -97,7 +97,8 @@ export function useAttendanceApi(userId?: string, enabled = true, params: Attend
     },
     enabled,
   );
-  const invalidate = [attendanceKeys.root, ['dashboard']];
+  // Clocking in creates the day's check-ins, so prompts refresh straight away.
+  const invalidate = [attendanceKeys.root, ['dashboard'], ['prompts']];
 
   const clockInMutation = useApiMutation<AttendanceActionResponse, ClockInRequest>(
     async (request) => {

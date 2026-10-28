@@ -31,6 +31,20 @@ public interface DailyPromptRepository extends JpaRepository<DailyPrompt, UUID> 
     List<DailyPrompt> findByPromptDate(LocalDate date);
 
     @Query("""
+            SELECT p FROM DailyPrompt p JOIN FETCH p.user u
+            WHERE p.promptDate = :date
+            ORDER BY u.fullName, p.scheduledAt
+            """)
+    List<DailyPrompt> findForReview(@Param("date") LocalDate date);
+
+    @Query("""
+            SELECT p FROM DailyPrompt p JOIN FETCH p.user u
+            WHERE p.promptDate = :date AND u.champion = :champion
+            ORDER BY u.fullName, p.scheduledAt
+            """)
+    List<DailyPrompt> findForReviewByChampion(@Param("date") LocalDate date, @Param("champion") User champion);
+
+    @Query("""
             SELECT p FROM DailyPrompt p
             WHERE p.user = :user
               AND p.status IN (

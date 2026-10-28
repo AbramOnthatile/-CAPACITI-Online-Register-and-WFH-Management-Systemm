@@ -16,7 +16,7 @@ public interface ScorecardEntryRepository extends JpaRepository<ScorecardEntry, 
     List<ScorecardEntry> findByAssessmentId(UUID id);
 
     @EntityGraph(attributePaths = "assessment")
-    List<ScorecardEntry> findByCandidateIdAndAssessmentStatusOrderByAssessmentAssessmentDateDesc(
+    List<ScorecardEntry> findByCandidateIdAndAssessmentStatusOrderByAssessmentAssessmentDateDescAssessmentSubmittedAtDesc(
             UUID candidateId, AssessmentStatus status);
 
     @EntityGraph(attributePaths = "assessment")

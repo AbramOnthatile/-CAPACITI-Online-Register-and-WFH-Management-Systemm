@@ -47,7 +47,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-12 lg:gap-6">
-        <div className="lg:col-span-8">
+        <div className="min-w-0 lg:col-span-8">
           <Card title="User directory" subtitle={`${filtered.length} candidates matched`} actions={<Link to="/admin/users" className="link text-xs">Manage <ArrowRight className="h-3.5 w-3.5" /></Link>} contentClassName="p-0 sm:p-0">
             <div className="border-b border-slate-100 p-4 sm:px-5">
               <label className="relative block">
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
             </div>
             <div className="table-wrap">
               <table className="table">
-                <thead><tr><th>Candidate</th><th className="hidden sm:table-cell">Campus</th><th className="hidden md:table-cell">Champion</th><th className="text-right">Status</th></tr></thead>
+                <thead><tr><th>Candidate</th><th className="hidden md:table-cell">Campus</th><th className="hidden xl:table-cell">Champion</th><th className="text-right">Status</th></tr></thead>
                 <tbody>
                   {filtered.slice(0, 8).map((candidate) => {
                     const champion = users.find((user) => user.id === candidate.championId);
@@ -70,8 +70,8 @@ const AdminDashboard = () => {
                             <div className="min-w-0"><p className="truncate font-bold text-navy">{candidate.fullName}</p><p className="truncate font-mono text-xs text-slate-400">{candidate.email}</p></div>
                           </div>
                         </td>
-                        <td className="hidden text-slate-600 sm:table-cell">{candidate.campusName || '—'}</td>
-                        <td className="hidden text-slate-600 md:table-cell">{champion?.fullName || '—'}</td>
+                        <td className="hidden text-slate-600 md:table-cell">{candidate.campusName || '—'}</td>
+                        <td className="hidden text-slate-600 xl:table-cell">{champion?.fullName || '—'}</td>
                         <td className="text-right"><ActiveBadge active={candidate.active} /></td>
                       </tr>
                     );
@@ -82,7 +82,7 @@ const AdminDashboard = () => {
             </div>
           </Card>
         </div>
-        <div className="space-y-5 lg:col-span-4 lg:space-y-6">
+        <div className="min-w-0 space-y-5 lg:col-span-4 lg:space-y-6">
           <Card title="Pending WFH requests" actions={<Link to="/admin/reports" className="link text-xs">Reports <ArrowRight className="h-3.5 w-3.5" /></Link>}>
             {!isDemoMode && (reports?.pendingWfh ?? 0) > 0 ? (
               <p className="meta">{reports.pendingWfh} pending request{reports.pendingWfh === 1 ? '' : 's'} are included in the aggregate report. Detailed review is available to the assigned champion.</p>

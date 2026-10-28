@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Award, ChartNoAxesColumnIncreasing } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { brandSeries, chartInk, ChartTooltip, gridProps, xAxisProps, yAxisProps } from '../../../components/charts/chartTheme';
 import Card from '../../../components/common/Card';
 import PageHeader from '../../../components/common/PageHeader';
 import Alert from '../../../components/common/Alert';
@@ -29,7 +30,9 @@ const scoreClasses = {
 const MyScorecardsPage = () => {
   const { scorecards: loadedScorecards, loading, error, refresh } = useMyScorecards();
   const scorecards = loadedScorecards.slice().sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate));
+  // Bars are labelled by title (several assessments can share a date); the tooltip adds the date.
   const chartData = scorecards.slice().reverse().map((scorecard) => ({
+    key: scorecard.assessmentId ?? scorecard.id ?? `${scorecard.title}-${scorecard.assessmentDate}`,
     title: scorecard.title,
     date: scorecard.assessmentDate,
     overallPercent: scorecard.overallPercent,
@@ -57,11 +60,11 @@ const MyScorecardsPage = () => {
               <div className="h-56 w-full" aria-label="Your scorecard progress chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={{ stroke: '#cbd5e1' }} />
-                    <YAxis domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip formatter={(value) => [`${value}%`, 'Overall']} labelFormatter={(label) => `Assessment date: ${label}`} contentStyle={{ backgroundColor: '#1D2951', borderRadius: '12px', color: '#ffffff', border: 'none', fontSize: '11px' }} />
-                    <Bar dataKey="overallPercent" name="Overall" fill="#6115D0" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="key" tickFormatter={(key) => chartData.find((item) => item.key === key)?.title ?? key} interval={0} {...xAxisProps} />
+                    <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} unit="%" {...yAxisProps} />
+                    <Tooltip cursor={{ fill: chartInk.cursor }} content={<ChartTooltip labelFormatter={(key) => { const item = chartData.find((entry) => entry.key === key); return item ? `${item.title} · ${item.date}` : key; }} valueFormatter={(value) => `${value}%`} />} />
+                    <Bar dataKey="overallPercent" name="Overall score" fill={brandSeries} radius={[4, 4, 0, 0]} maxBarSize={44} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

@@ -23,8 +23,8 @@ const Candidates = () => {
 
       <Alert>{usersError?.message}</Alert>
 
-      {/* Phones */}
-      <ul className="list md:hidden">
+      {/* Phones & tablets */}
+      <ul className="list lg:hidden">
         {candidates.map((candidate) => (
           <li key={candidate.id}>
             <Link to={`/champion/candidates/${candidate.id}`} className="surface surface-interactive flex items-center gap-3 p-4">
@@ -41,8 +41,8 @@ const Candidates = () => {
         {!candidates.length && <li><EmptyState icon={Users} description={emptyMessage} /></li>}
       </ul>
 
-      {/* Tablet & desktop */}
-      <div className="surface hidden overflow-hidden md:block">
+      {/* Desktop */}
+      <div className="surface hidden overflow-hidden lg:block">
         <div className="table-wrap">
           <table className="table">
             <thead><tr><th>Candidate</th><th>Campus</th><th>Default mode</th><th>Status</th><th className="text-right">Details</th></tr></thead>

@@ -124,8 +124,8 @@ const UserManagement = () => {
       {!addUserModal && (canRetryError(usersError) || canRetryError(campusesError)) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => void Promise.all([refreshUsers(), refreshCampuses()])}>Retry</button>}
       {(usersLoading || campusesLoading) && <Skeleton label="Loading users and campuses" />}
 
-      {/* Phones */}
-      <ul className="list md:hidden">
+      {/* Phones & tablets */}
+      <ul className="list lg:hidden">
         {filteredUsers.map((user) => (
           <li key={user.id} className="surface p-4">
             <div className="flex items-center gap-3">
@@ -149,12 +149,12 @@ const UserManagement = () => {
         {!filteredUsers.length && <li><EmptyState icon={Users} description={emptyMessage} /></li>}
       </ul>
 
-      {/* Tablet & desktop */}
-      <div className="surface hidden overflow-hidden md:block">
+      {/* Desktop */}
+      <div className="surface hidden overflow-hidden lg:block">
         <div className="table-wrap">
           <table className="table">
             <thead>
-              <tr><th>User</th><th>Role</th><th>Campus</th><th>Default mode</th><th>Status</th><th className="text-right">Actions</th></tr>
+              <tr><th>User</th><th>Role</th><th className="hidden xl:table-cell">Campus</th><th className="hidden xl:table-cell">Default mode</th><th>Status</th><th className="text-right">Actions</th></tr>
             </thead>
             <tbody>
               {filteredUsers.map((user) => (
@@ -166,8 +166,8 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td><RoleBadge role={user.role} /></td>
-                  <td className="text-slate-600">{user.campusName || '—'}</td>
-                  <td><StatusBadge status={user.defaultMode} /></td>
+                  <td className="hidden text-slate-600 xl:table-cell">{user.campusName || '—'}</td>
+                  <td className="hidden xl:table-cell"><StatusBadge status={user.defaultMode} /></td>
                   <td><ActiveBadge active={user.active} /></td>
                   <td className="text-right"><button type="button" disabled={updatingUserId === user.id} onClick={() => void toggleActive(user.id, user.active)} className="btn btn-secondary btn-sm">{updatingUserId === user.id ? 'Saving...' : user.active ? 'Deactivate' : 'Activate'}</button></td>
                 </tr>

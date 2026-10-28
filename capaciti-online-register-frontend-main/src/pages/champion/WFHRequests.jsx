@@ -184,8 +184,8 @@ const ChampionWFHRequests = () => {
       <Alert>{decisionError}</Alert>
       {retryDecision && canRetryError(retryDecision.error) && <button type="button" className="btn btn-secondary btn-sm" disabled={Boolean(decidingId) || bulkLoading} onClick={() => void retryQuickDecision()}>Retry decision</button>}
 
-      {/* Phones */}
-      <ul className="list md:hidden">
+      {/* Phones & tablets */}
+      <ul className="list lg:hidden">
         {filtered.map((request) => (
           <li key={request.id} className="surface p-4">
             <div className="flex items-start gap-3">
@@ -210,8 +210,8 @@ const ChampionWFHRequests = () => {
         {!filtered.length && <li><EmptyState icon={Inbox} description="No WFH requests in this category." /></li>}
       </ul>
 
-      {/* Tablet & desktop */}
-      <div className="surface hidden overflow-hidden md:block">
+      {/* Desktop */}
+      <div className="surface hidden overflow-hidden lg:block">
         <div className="table-wrap">
           <table className="table">
             <thead>

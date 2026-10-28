@@ -1,5 +1,7 @@
 package za.ac.capaciti.capacitionlineregisterbackend.controller;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
@@ -11,9 +13,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.PromptListResponse;
+import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.PromptReviewDto;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.SubmitPromptRequest;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.dtos.prompt.SubmitPromptResponse;
 import za.ac.capaciti.capacitionlineregisterbackend.service.IPromptService;
@@ -37,6 +41,15 @@ public class PromptController {
     @GetMapping("/today")
     public ResponseEntity<PromptListResponse> today(Authentication authentication) {
         return ResponseEntity.ok(promptService.today(authentication.getName()));
+    }
+
+    // Champions see their own candidates' check-ins; admins see everyone's.
+    @GetMapping("/review")
+    @PreAuthorize("hasRole('TECH_CHAMP') or hasRole('ADMIN')")
+    public ResponseEntity<List<PromptReviewDto>> review(
+            Authentication authentication,
+            @RequestParam(required = false) LocalDate date) {
+        return ResponseEntity.ok(promptService.review(authentication.getName(), date));
     }
 
     @PostMapping("/{id}/submit")

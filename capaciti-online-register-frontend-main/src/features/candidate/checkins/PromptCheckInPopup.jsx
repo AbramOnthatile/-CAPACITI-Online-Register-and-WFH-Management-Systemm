@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock3, X } from 'lucide-react';
-import { PromptStage } from '../../../api/types';
+import { Plus, Trash2, X } from 'lucide-react';
+import { PromptStage, PromptStatus, WorkMode } from '../../../api/types';
 import { useApp } from '../../../context/AppContext';
 import { createDraftKey } from '../../../lib/attendanceAction';
-import { ApiError, getUserErrorMessage } from '../../../api/client';
-import { canRetryError, getFieldError } from '../../../api/client';
+import { ApiError, canRetryError, getFieldError, getUserErrorMessage } from '../../../api/client';
+import { MAX_TASKS, planFor, sameTitle, taskStatusOptions } from '../../../lib/promptTasks';
+import { useCheckInGate } from './CheckInGate';
 
 const stages = [
   PromptStage.MORNING_KICKOFF,
@@ -19,32 +20,64 @@ const stageTitles = {
   [PromptStage.EOD_WRAP_UP]: 'End-of-day wrap-up',
 };
 
-const qualityStatusLabel = (prompt) => prompt.stage === PromptStage.MORNING_KICKOFF
-  ? '2–3 deliverables, stand-up, power, and ISP'
-  : prompt.stage === PromptStage.MIDDAY_PULSE
-    ? 'Progress status and any blocker note'
-    : 'A GitHub PR, commit hash, or deliverable link';
+const stageDescriptions = {
+  [PromptStage.MORNING_KICKOFF]: 'Set up the tasks you will work on today.',
+  [PromptStage.MIDDAY_PULSE]: 'Are you still on track? Update each task.',
+  [PromptStage.EOD_WRAP_UP]: 'Update every task before you finish for the day.',
+};
 
+const gateDescriptions = {
+  'clock-out': 'Wrap up your day before you clock out.',
+  'sign-out': 'You are still clocked in. Wrap up your day before signing out, or skip it for now.',
+};
+
+const submitLabels = {
+  [PromptStage.MORNING_KICKOFF]: 'Save my tasks',
+  [PromptStage.MIDDAY_PULSE]: 'Submit check-in',
+  [PromptStage.EOD_WRAP_UP]: 'Submit wrap-up',
+};
+
+const gateSubmitLabels = {
+  'clock-out': 'Submit and clock out',
+  'sign-out': 'Submit and sign out',
+};
+
+// The morning form opens straight after clock-in and the midday check from 13:30;
+// the end-of-day form only opens through clock-out or sign-out.
 const PromptCheckInPopup = () => {
-  const { activePrompts, activePromptServerTime, submitPrompt, refreshPrompts } = useApp();
+  const { prompts, activePrompts, attendanceToday, submitPrompt, refreshPrompts } = useApp();
+  const { gate, finishEod } = useCheckInGate();
   const [dismissedId, setDismissedId] = useState(null);
-  const [serverElapsedSeconds, setServerElapsedSeconds] = useState(0);
-
-  useEffect(() => {
-    setServerElapsedSeconds(0);
-  }, [activePromptServerTime]);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setServerElapsedSeconds((seconds) => seconds + 1), 1000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   const prompt = useMemo(() => {
+    // Midday waits until the morning tasks are saved and loaded, so it can list them.
+    const morningPending = activePrompts.some((item) => item.stage === PromptStage.MORNING_KICKOFF)
+      || prompts.some((item) => item.stage === PromptStage.MORNING_KICKOFF && item.status === PromptStatus.ACTIVE);
     const available = activePrompts
-      .filter((item) => item.id !== dismissedId)
+      .filter((item) => item.stage !== PromptStage.EOD_WRAP_UP && item.id !== dismissedId)
+      .filter((item) => !(item.stage === PromptStage.MIDDAY_PULSE && morningPending))
       .sort((left, right) => stages.indexOf(left.stage) - stages.indexOf(right.stage));
     return available[0] ?? null;
-  }, [activePrompts, dismissedId]);
+  }, [activePrompts, prompts, dismissedId]);
+
+  const workMode = attendanceToday?.workMode;
+  // Rebuild the form when an earlier check-in is saved, so it starts from the latest task list.
+  const submittedKey = prompts.filter((item) => item.status === PromptStatus.SUBMITTED).map((item) => item.id).join(',');
+
+  if (gate) {
+    return (
+      <PromptCheckInDialog
+        key={`${gate.prompt.id}:${submittedKey}`}
+        prompt={gate.prompt}
+        prompts={prompts}
+        workMode={workMode}
+        gateReason={gate.reason}
+        onSubmit={submitPrompt}
+        onRefresh={refreshPrompts}
+        onClose={finishEod}
+      />
+    );
+  }
 
   if (!prompt) {
     const dismissedPrompt = activePrompts.find((item) => item.id === dismissedId);
@@ -61,10 +94,10 @@ const PromptCheckInPopup = () => {
 
   return (
     <PromptCheckInDialog
-      key={prompt.id}
+      key={`${prompt.id}:${submittedKey}`}
       prompt={prompt}
-      serverTime={activePromptServerTime}
-      elapsedSeconds={serverElapsedSeconds}
+      prompts={prompts}
+      workMode={workMode}
       onSubmit={submitPrompt}
       onRefresh={refreshPrompts}
       onClose={() => setDismissedId(prompt.id)}
@@ -72,17 +105,21 @@ const PromptCheckInPopup = () => {
   );
 };
 
-const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onRefresh, onClose }) => {
-  const durationSeconds = Math.max(1, Math.floor((Date.parse(prompt.expiresAt) - Date.parse(serverTime)) / 1000));
-  const remainingSeconds = Math.max(0, Math.floor((Date.parse(prompt.expiresAt) - Date.parse(serverTime)) / 1000) - elapsedSeconds);
-  const progress = Math.min(1, remainingSeconds / durationSeconds);
-  const [deliverables, setDeliverables] = useState(['', '']);
+const PromptCheckInDialog = ({ prompt, prompts, workMode, gateReason, onSubmit, onRefresh, onClose }) => {
+  const isMorning = prompt.stage === PromptStage.MORNING_KICKOFF;
+  const isEod = prompt.stage === PromptStage.EOD_WRAP_UP;
+  const workingFromHome = workMode === WorkMode.WFH;
+  const plan = useMemo(() => planFor(prompts, prompt.stage), [prompts, prompt.stage]);
+
+  const [morningTasks, setMorningTasks] = useState(['']);
+  const [rows, setRows] = useState(() => (plan.current.length
+    ? plan.current.map((task) => ({ title: task.title, status: task.status, existing: true }))
+    : [{ title: '', status: '', existing: false }]));
   const [standupConfirmed, setStandupConfirmed] = useState('');
   const [powerStatus, setPowerStatus] = useState('');
   const [ispStatus, setIspStatus] = useState('');
-  const [progressStatus, setProgressStatus] = useState('');
   const [blockerNote, setBlockerNote] = useState('');
-  const [workLink, setWorkLink] = useState('');
+  const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [qualityMessage, setQualityMessage] = useState('');
   const [attempt, setAttempt] = useState(0);
@@ -92,52 +129,63 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onR
   const [fieldErrors, setFieldErrors] = useState({});
   const [retryError, setRetryError] = useState(null);
 
+  // New tasks unlock once a morning task is done (or straight away when there was no morning plan).
+  const morningTaskDone = rows.some((row) => row.status === 'DONE' && plan.morning.some((title) => sameTitle(title, row.title)));
+  const canAddTasks = (!plan.morningSubmitted || morningTaskDone) && rows.length < MAX_TASKS;
+  const behind = rows.some((row) => ['DELAYED', 'BLOCKED'].includes(row.status));
+
+  const updateRow = (index, change) => setRows((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...change } : row));
+
+  const validate = () => {
+    if (isMorning) {
+      const titles = morningTasks.map((item) => item.trim()).filter(Boolean);
+      if (!titles.length) return 'Add at least one task for today.';
+      if (new Set(titles.map((title) => title.toLowerCase())).size !== titles.length) return 'Each task must have a different title.';
+      if (workingFromHome && (!standupConfirmed || !powerStatus || !ispStatus)) return 'Answer the stand-up, power and internet questions.';
+      return '';
+    }
+    if (rows.some((row) => !row.title.trim())) return 'Give every task a title, or remove the empty one.';
+    if (rows.some((row) => !row.status)) return 'Choose a status for every task.';
+    const titles = rows.map((row) => row.title.trim().toLowerCase());
+    if (new Set(titles).size !== titles.length) return 'Each task must have a different title.';
+    if (rows.some((row) => !row.existing) && plan.morningSubmitted && !morningTaskDone) return 'Complete at least one of your morning tasks before adding new ones.';
+    if (behind && !blockerNote.trim()) return 'Add a note on what is delaying or blocking you.';
+    return '';
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     if (inFlight.current) return;
     setError('');
     setFieldErrors({});
     setQualityMessage('');
-    const payload = prompt.stage === PromptStage.MORNING_KICKOFF
+    const problem = validate();
+    if (problem) {
+      setError(problem);
+      return;
+    }
+
+    const payload = isMorning
       ? {
-        deliverables: deliverables.map((item) => item.trim()).filter(Boolean),
-        standupConfirmed: standupConfirmed === 'true' ? true : standupConfirmed === 'false' ? false : undefined,
-        powerStatus: powerStatus || undefined,
-        ispStatus: ispStatus || undefined,
+        tasks: morningTasks.map((item) => item.trim()).filter(Boolean).map((title) => ({ title })),
+        standupConfirmed: workingFromHome ? standupConfirmed === 'true' : undefined,
+        powerStatus: workingFromHome ? powerStatus : undefined,
+        ispStatus: workingFromHome ? ispStatus : undefined,
       }
-      : prompt.stage === PromptStage.MIDDAY_PULSE
-        ? {
-          progressStatus: progressStatus || undefined,
-          blockerNote: blockerNote.trim() || undefined,
-        }
-        : { workLink: workLink.trim() || undefined };
+      : {
+        tasks: rows.map((row) => ({ title: row.title.trim(), status: row.status })),
+        blockerNote: behind ? blockerNote.trim() : undefined,
+        note: isEod ? note.trim() || undefined : undefined,
+      };
     payload.draftKey = draftKey.current;
 
-    const nonBlankDeliverables = payload.deliverables ?? [];
-    if (prompt.stage === PromptStage.MORNING_KICKOFF
-      && (nonBlankDeliverables.length < 2 || nonBlankDeliverables.length > 3
-        || payload.standupConfirmed === undefined || !payload.powerStatus || !payload.ispStatus)) {
-      setError('Add 2 or 3 deliverables and answer all stand-up, power, and ISP fields.');
-      return;
-    }
-    if (prompt.stage === PromptStage.MIDDAY_PULSE
-      && (!payload.progressStatus
-        || (['DELAYED', 'BLOCKED'].includes(payload.progressStatus) && !payload.blockerNote))) {
-      setError('Choose your progress status and add a blocker note when delayed or blocked.');
-      return;
-    }
-    if (prompt.stage === PromptStage.EOD_WRAP_UP && !isValidWorkLink(payload.workLink)) {
-      setError('Enter an http(s) link or a 7 to 40 character hexadecimal commit hash.');
-      return;
-    }
     inFlight.current = true;
     setSaving(true);
     try {
       const result = await onSubmit(prompt.id, payload);
       setAttempt(result.quality.attempt);
       if (result.quality.accepted) {
-        setQualityMessage(result.quality.feedbackMessage || 'Check-in submitted successfully.');
-        onClose();
+        onClose('submitted');
       } else {
         setQualityMessage(result.quality.feedbackMessage || 'Please revise your response and try again.');
       }
@@ -157,83 +205,122 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onR
       <section role="dialog" aria-modal="true" aria-labelledby="prompt-dialog-title" className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <header className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#6115D0]">WFH check-in · {prompt.stage.replaceAll('_', ' ')}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.17em] text-[#6115D0]">Daily check-in</p>
             <h2 id="prompt-dialog-title" className="mt-1 text-lg font-black text-[#1D2951]">{stageTitles[prompt.stage]}</h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">{qualityStatusLabel(prompt)}</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">{gateReason ? gateDescriptions[gateReason] : stageDescriptions[prompt.stage]}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="Dismiss check-in" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
+          <button type="button" onClick={() => onClose('cancelled')} aria-label={gateReason ? 'Cancel' : 'Dismiss check-in'} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
             <X className="h-4 w-4" />
           </button>
         </header>
 
-        <div className="mt-4 flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/70 p-3">
-          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-            <svg viewBox="0 0 44 44" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden="true">
-              <circle cx="22" cy="22" r="18" fill="none" stroke="#ddd6fe" strokeWidth="4" />
-              <circle cx="22" cy="22" r="18" fill="none" stroke="#6115D0" strokeWidth="4" strokeLinecap="round" strokeDasharray="113.1" strokeDashoffset={113.1 * (1 - progress)} />
-            </svg>
-            <Clock3 className="h-4 w-4 text-[#6115D0]" />
-          </div>
-          <div>
-            <p className="font-mono text-lg font-black tabular-nums text-[#1D2951]">{formatDuration(remainingSeconds)}</p>
-            <p className="text-[10px] text-slate-500">Time remaining · server time</p>
-          </div>
-        </div>
-
         {qualityMessage && <p role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">{qualityMessage}{attempt > 0 && ` · Attempt ${attempt}`}</p>}
         {error && <p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-relaxed text-rose-700">{error}</p>}
 
-        <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-4">
-          {prompt.stage === PromptStage.MORNING_KICKOFF && (
+        <form onSubmit={(event) => void submit(event)} className="mt-4 space-y-4" noValidate>
+          {isMorning ? (
             <>
               <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-700">Today’s deliverables <span className="font-medium text-slate-400">(2–3)</span></p>
-                {deliverables.map((value, index) => (
-                  <label key={index} className="block">
-                    <span className="sr-only">Deliverable {index + 1}</span>
-                    <input maxLength={500} value={value} onChange={(event) => setDeliverables((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="input text-xs" placeholder={`Deliverable ${index + 1}`} />
-                  </label>
+                <p className="text-xs font-bold text-slate-700">Today’s tasks</p>
+                {morningTasks.map((value, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <label className="flex-1">
+                      <span className="sr-only">Task {index + 1}</span>
+                      <input maxLength={500} value={value} onChange={(event) => setMorningTasks((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} className="input text-xs" placeholder={`Task ${index + 1}`} />
+                    </label>
+                    {morningTasks.length > 1 && (
+                      <button type="button" onClick={() => setMorningTasks((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove task ${index + 1}`} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 ))}
-                {deliverables.length < 3 && <button type="button" onClick={() => setDeliverables((current) => [...current, ''])} className="text-[11px] font-bold text-[#6115D0] hover:underline">+ Add another deliverable</button>}
-                {deliverables.length > 2 && <button type="button" onClick={() => setDeliverables((current) => current.slice(0, 2))} className="ml-3 text-[11px] font-semibold text-slate-500 hover:underline">Remove third</button>}
-                {getFieldError(fieldErrors, 'deliverables') && <p role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'deliverables')}</p>}
+                {morningTasks.length < MAX_TASKS && (
+                  <button type="button" onClick={() => setMorningTasks((current) => [...current, ''])} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#6115D0] hover:underline">
+                    <Plus className="h-3 w-3" />Add another task
+                  </button>
+                )}
+                {getFieldError(fieldErrors, 'tasks') && <p role="alert" className="text-xs text-rose-700">{getFieldError(fieldErrors, 'tasks')}</p>}
               </div>
-              <SelectField label="Stand-up confirmed" value={standupConfirmed} onChange={setStandupConfirmed} options={[['true', 'Yes'], ['false', 'No']]} error={getFieldError(fieldErrors, 'standupConfirmed')} />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <SelectField label="Power status" value={powerStatus} onChange={setPowerStatus} options={statusOptions} error={getFieldError(fieldErrors, 'powerStatus')} />
-                <SelectField label="ISP status" value={ispStatus} onChange={setIspStatus} options={statusOptions} error={getFieldError(fieldErrors, 'ispStatus')} />
-              </div>
+              {workingFromHome && (
+                <>
+                  <SelectField label="Stand-up confirmed" value={standupConfirmed} onChange={setStandupConfirmed} options={[['true', 'Yes'], ['false', 'No']]} placeholder="Select an answer" />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <SelectField label="Power status" value={powerStatus} onChange={setPowerStatus} options={connectionOptions} />
+                    <SelectField label="Internet status" value={ispStatus} onChange={setIspStatus} options={connectionOptions} />
+                  </div>
+                </>
+              )}
             </>
-          )}
-
-          {prompt.stage === PromptStage.MIDDAY_PULSE && (
+          ) : (
             <>
-              <SelectField label="Progress status" value={progressStatus} onChange={setProgressStatus} options={ [['ON_TRACK', 'On track'], ['DELAYED', 'Delayed'], ['BLOCKED', 'Blocked']]} error={getFieldError(fieldErrors, 'progressStatus')} />
-              {['DELAYED', 'BLOCKED'].includes(progressStatus) && (
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-slate-700">Your tasks</p>
+                <ul className="space-y-2">
+                  {rows.map((row, index) => (
+                    <li key={index} className="flex flex-col gap-2 rounded-xl border border-slate-100 p-2.5 sm:flex-row sm:items-center">
+                      {row.existing ? (
+                        <p className="min-w-0 flex-1 break-words text-xs font-semibold text-slate-700">{row.title}</p>
+                      ) : (
+                        <label className="min-w-0 flex-1">
+                          <span className="sr-only">New task title</span>
+                          <input maxLength={500} value={row.title} onChange={(event) => updateRow(index, { title: event.target.value })} className="input text-xs" placeholder="New task" />
+                        </label>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 sm:w-36 sm:flex-none">
+                          <span className="sr-only">Status of {row.title || 'new task'}</span>
+                          <select value={row.status} onChange={(event) => updateRow(index, { status: event.target.value })} className="input text-xs">
+                            <option value="" disabled>Status</option>
+                            {taskStatusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                        </label>
+                        {!row.existing && (rows.length > 1) && (
+                          <button type="button" onClick={() => setRows((current) => current.filter((_, rowIndex) => rowIndex !== index))} aria-label="Remove new task" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {rows.length < MAX_TASKS && (
+                  canAddTasks ? (
+                    <button type="button" onClick={() => setRows((current) => [...current, { title: '', status: 'ON_TRACK', existing: false }])} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#6115D0] hover:underline">
+                      <Plus className="h-3 w-3" />Add a task
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-slate-400">Mark one of your morning tasks as done to add more tasks.</p>
+                  )
+                )}
+              </div>
+              {behind && (
                 <label className="block text-xs font-bold text-slate-700">
-                  Blocker note
-                  <textarea maxLength={1000} rows={3} value={blockerNote} onChange={(event) => setBlockerNote(event.target.value)} className="input mt-1 text-xs" placeholder="Briefly describe what is blocking or delaying progress." />
+                  What is delaying or blocking you?
+                  <textarea maxLength={1000} rows={3} value={blockerNote} onChange={(event) => setBlockerNote(event.target.value)} className="input mt-1 text-xs" placeholder="Briefly describe what is holding the task up." />
                   {getFieldError(fieldErrors, 'blockerNote') && <span role="alert" className="block text-rose-700">{getFieldError(fieldErrors, 'blockerNote')}</span>}
                 </label>
               )}
-              {progressStatus === 'BLOCKED' && <p className="rounded-lg bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-500">Your blocker will be added to the passive support queue for review. No alert is sent.</p>}
+              {rows.some((row) => row.status === 'BLOCKED') && <p className="rounded-lg bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-500">Blocked tasks are added to the support queue for review. No alert is sent.</p>}
+              {isEod && (
+                <label className="block text-xs font-bold text-slate-700">
+                  Anything else about today? <span className="font-medium text-slate-400">(optional)</span>
+                  <textarea maxLength={1000} rows={2} value={note} onChange={(event) => setNote(event.target.value)} className="input mt-1 text-xs" />
+                </label>
+              )}
             </>
           )}
 
-          {prompt.stage === PromptStage.EOD_WRAP_UP && (
-            <label className="block text-xs font-bold text-slate-700">
-              PR, commit hash, or deliverable link
-              <input maxLength={500} value={workLink} onChange={(event) => setWorkLink(event.target.value)} className="input mt-1 text-xs" placeholder="https://github.com/... or commit hash" />
-              {getFieldError(fieldErrors, 'workLink') && <span role="alert" className="mt-1 block text-rose-700">{getFieldError(fieldErrors, 'workLink')}</span>}
-            </label>
-          )}
-
           <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <Link to="/candidate/progress" onClick={onClose} className="text-center text-[11px] font-semibold text-slate-500 hover:text-[#6115D0]">View check-in history</Link>
+            {gateReason === 'sign-out' ? (
+              <button type="button" disabled={saving} onClick={() => onClose('skipped')} className="text-center text-[11px] font-semibold text-slate-500 hover:text-[#6115D0]">Skip and sign out</button>
+            ) : gateReason ? <span /> : (
+              <Link to="/candidate/progress" onClick={() => onClose('cancelled')} className="text-center text-[11px] font-semibold text-slate-500 hover:text-[#6115D0]">View check-in history</Link>
+            )}
             <div className="flex justify-end gap-2">
               {canRetryError(retryError) && <button type="button" disabled={saving} onClick={(event) => event.currentTarget.closest('form')?.requestSubmit()} className="btn btn-secondary btn-sm">Retry</button>}
               <button type="submit" disabled={saving} className="rounded-xl bg-[#6115D0] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4F11AA] disabled:cursor-not-allowed disabled:opacity-50">
-                {saving ? 'Submitting…' : 'Submit check-in'}
+                {saving ? 'Submitting…' : (gateReason ? gateSubmitLabels[gateReason] : submitLabels[prompt.stage])}
               </button>
             </div>
           </div>
@@ -243,34 +330,16 @@ const PromptCheckInDialog = ({ prompt, serverTime, elapsedSeconds, onSubmit, onR
   );
 };
 
-const statusOptions = [['STABLE', 'Stable'], ['UNSTABLE', 'Unstable'], ['DOWN', 'Down']];
+const connectionOptions = [['STABLE', 'Stable'], ['UNSTABLE', 'Unstable'], ['DOWN', 'Down']];
 
-const SelectField = ({ label, value, onChange, options, error }) => (
+const SelectField = ({ label, value, onChange, options, placeholder = 'Select status' }) => (
   <label className="block text-xs font-bold text-slate-700">
     {label}
-    <select required value={value} onChange={(event) => onChange(event.target.value)} className="input mt-1 text-xs">
-      <option value="" disabled>Select status</option>
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="input mt-1 text-xs">
+      <option value="" disabled>{placeholder}</option>
       {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
     </select>
-    {error && <span role="alert" className="mt-1 block text-rose-700">{error}</span>}
   </label>
 );
-
-function formatDuration(seconds) {
-  const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
-  const remaining = (seconds % 60).toString().padStart(2, '0');
-  return `${minutes}:${remaining}`;
-}
-
-function isValidWorkLink(value) {
-  if (!value) return false;
-  if (/^[a-fA-F0-9]{7,40}$/.test(value)) return true;
-  try {
-    const url = new URL(value);
-    return ['http:', 'https:'].includes(url.protocol) && Boolean(url.hostname);
-  } catch {
-    return false;
-  }
-}
 
 export default PromptCheckInPopup;

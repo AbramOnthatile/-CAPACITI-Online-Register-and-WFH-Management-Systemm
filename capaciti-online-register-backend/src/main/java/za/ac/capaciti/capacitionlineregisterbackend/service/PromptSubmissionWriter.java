@@ -59,9 +59,15 @@ public class PromptSubmissionWriter {
         prompt.setAiQualityFlag(quality.flagged());
         DailyPrompt saved = dailyPromptRepository.save(prompt);
 
-        if (prompt.getStage() == PromptStage.MIDDAY_PULSE
+        if (prompt.getStage() != PromptStage.MORNING_KICKOFF
                 && "BLOCKED".equals(response.get("progressStatus"))) {
-            createPassiveBlockerTicket(user, (String) response.get("blockerNote"), quality.flagged());
+            WorkMode workMode = prompt.getAttendance() == null || prompt.getAttendance().getWorkMode() == null
+                    ? WorkMode.ON_SITE
+                    : prompt.getAttendance().getWorkMode();
+            String title = prompt.getStage() == PromptStage.MIDDAY_PULSE
+                    ? "Midday check-in blocker"
+                    : "End-of-day check-in blocker";
+            createPassiveBlockerTicket(user, title, workMode, (String) response.get("blockerNote"), quality.flagged());
         }
         return new SubmitPromptResponse(promptMapper.toDto(saved), quality);
     }
@@ -82,12 +88,12 @@ public class PromptSubmissionWriter {
         return prompt;
     }
 
-    private void createPassiveBlockerTicket(User user, String blockerNote, boolean aiQualityFlag) {
+    private void createPassiveBlockerTicket(User user, String title, WorkMode workMode, String blockerNote, boolean aiQualityFlag) {
         supportTicketRepository.save(SupportTicket.builder()
                 .user(user)
                 .type(TicketType.BLOCKER)
-                .workMode(WorkMode.WFH)
-                .title("WFH midday check-in blocker")
+                .workMode(workMode)
+                .title(title)
                 .description(blockerNote)
                 .status(TicketStatus.OPEN)
                 .prolonged(false)

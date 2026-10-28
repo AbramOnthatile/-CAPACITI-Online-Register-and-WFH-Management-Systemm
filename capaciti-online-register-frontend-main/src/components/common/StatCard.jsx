@@ -26,8 +26,8 @@ const StatCard = ({ title, value, detail, tone = 'primary', icon: Icon, trend, c
     </div>
     <p className={`mt-2 font-mono text-2xl font-extrabold tracking-tight tabular-nums ${colorValue ? valueToneMap[tone] : 'text-navy'}`}>{value}</p>
     {(detail || trend) && (
-      <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-slate-500">
-        <span className="truncate">{detail}</span>
+      <div className="mt-auto flex items-end justify-between gap-2 pt-1 text-xs text-slate-500">
+        <span className="min-w-0 leading-snug">{detail}</span>
         {trend && <span className="font-semibold text-emerald-600 tabular-nums">{trend}</span>}
       </div>
     )}

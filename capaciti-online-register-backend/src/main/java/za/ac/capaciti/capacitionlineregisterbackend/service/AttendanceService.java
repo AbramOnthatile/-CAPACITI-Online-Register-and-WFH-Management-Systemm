@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import za.ac.capaciti.capacitionlineregisterbackend.config.DemoAccounts;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.AttendanceRecord;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.CampusHub;
 import za.ac.capaciti.capacitionlineregisterbackend.domain.Notification;
@@ -56,6 +57,9 @@ public class AttendanceService implements IAttendanceService {
     private final AttendanceMapper attendanceMapper;
     private final AuditService auditService;
     private final NotificationRepository notificationRepository;
+    private final IPromptGeneratorService promptGeneratorService;
+    private final IPromptService promptService;
+    private final DemoAccounts demoAccounts;
 
     public AttendanceService(
             AttendanceRecordRepository attendanceRecordRepository,
@@ -67,7 +71,10 @@ public class AttendanceService implements IAttendanceService {
             IQualityGateService qualityGateService,
             AttendanceMapper attendanceMapper,
             AuditService auditService,
-            NotificationRepository notificationRepository) {
+            NotificationRepository notificationRepository,
+            IPromptGeneratorService promptGeneratorService,
+            IPromptService promptService,
+            DemoAccounts demoAccounts) {
         this.attendanceRecordRepository = attendanceRecordRepository;
         this.userRepository = userRepository;
         this.wfhRequestRepository = wfhRequestRepository;
@@ -78,6 +85,9 @@ public class AttendanceService implements IAttendanceService {
         this.attendanceMapper = attendanceMapper;
         this.auditService = auditService;
         this.notificationRepository = notificationRepository;
+        this.promptGeneratorService = promptGeneratorService;
+        this.promptService = promptService;
+        this.demoAccounts = demoAccounts;
     }
 
     @Override
@@ -90,17 +100,21 @@ public class AttendanceService implements IAttendanceService {
             throw new ConflictException("ALREADY_CLOCKED_IN", "You have already clocked in today.");
         }
 
+        // Demo accounts skip the opening time, WFH approval, location and late-reason checks.
+        boolean demo = demoAccounts.hasRelaxedRules(user);
         Instant now = Instant.now();
-        ArrivalStatus arrivalStatus = statusEngine.arrivalStatusFor(now, false);
+        ArrivalStatus arrivalStatus = demo
+                ? statusEngine.arrivalStatusAtAnyHour(now)
+                : statusEngine.arrivalStatusFor(now, false);
 
         WfhRequest wfhRequest = null;
         if (request.workMode() == WorkMode.WFH) {
             List<WfhRequest> approved = wfhRequestRepository.findApprovedCoveringForUser(user, today);
-            if (approved.isEmpty()) {
+            if (approved.isEmpty() && !demo) {
                 throw new ForbiddenException("WFH_NOT_APPROVED",
                         "You need an approved WFH request to clock in from home today.");
             }
-            wfhRequest = approved.get(0);
+            wfhRequest = approved.isEmpty() ? null : approved.get(0);
         }
 
         // On-Site passes when the IP is whitelisted OR the device is within the campus radius.
@@ -110,14 +124,16 @@ public class AttendanceService implements IAttendanceService {
         Double distanceM = null;
         if (request.workMode() == WorkMode.ON_SITE) {
             CampusHub campus = user.getCampus();
-            if (campus == null) {
+            if (campus == null && !demo) {
                 throw new ForbiddenException("NO_CAMPUS",
                         "No campus is assigned to your profile. Contact your administrator.");
             }
-            ipVerified = ipWhitelistService.isWhitelisted(clientIp, campus.getWhitelistedCidrs());
-            distanceM = locationVerificationService.distanceToCampus(campus, request.latitude(), request.longitude());
-            geoVerified = locationVerificationService.isWithinRadius(campus, distanceM);
-            if (!ipVerified && !geoVerified) {
+            if (campus != null) {
+                ipVerified = ipWhitelistService.isWhitelisted(clientIp, campus.getWhitelistedCidrs());
+                distanceM = locationVerificationService.distanceToCampus(campus, request.latitude(), request.longitude());
+                geoVerified = locationVerificationService.isWithinRadius(campus, distanceM);
+            }
+            if (campus != null && !ipVerified && !geoVerified && !demo) {
                 throw new ForbiddenException("LOCATION_NOT_VERIFIED",
                         "You must be on the campus network or within " + campus.getRadiusM()
                                 + " m of " + campus.getName() + " to clock in on-site.");
@@ -125,7 +141,7 @@ public class AttendanceService implements IAttendanceService {
         }
 
         QualityResult quality = null;
-        if (statusEngine.requiresLateReason(arrivalStatus)) {
+        if (statusEngine.requiresLateReason(arrivalStatus) && !demo) {
             if (Helper.isNullOrEmpty(request.lateReason())) {
                 return new AttendanceActionResponse(null, true, null);
             }
@@ -167,6 +183,8 @@ public class AttendanceService implements IAttendanceService {
         details.put("ipVerified", ipVerified);
         details.put("geoVerified", geoVerified);
         auditService.log(user, "CLOCK_IN", "AttendanceRecord", saved.getId().toString(), details);
+        // The morning task form opens straight after clock-in.
+        promptGeneratorService.generateOnClockIn(saved);
         return new AttendanceActionResponse(attendanceMapper.toDto(saved), false, quality);
     }
 
@@ -186,7 +204,7 @@ public class AttendanceService implements IAttendanceService {
         DepartureStatus departureStatus = statusEngine.departureStatusFor(now);
 
         QualityResult quality = null;
-        if (statusEngine.requiresClockOutText(departureStatus)) {
+        if (statusEngine.requiresClockOutText(departureStatus) && !demoAccounts.hasRelaxedRules(user)) {
             boolean early = departureStatus == DepartureStatus.PARTIAL_DAY;
             String text = early ? request.earlyClockoutReason() : request.lateClockoutNote();
             if (Helper.isNullOrEmpty(text)) {
@@ -214,6 +232,7 @@ public class AttendanceService implements IAttendanceService {
             record.setDeliverableLink(request.deliverableLink().trim());
         }
         AttendanceRecord saved = attendanceRecordRepository.save(record);
+        promptService.closeForClockOut(user, today);
         auditService.log(user, "CLOCK_OUT", "AttendanceRecord", saved.getId().toString(),
                 Map.of("departureStatus", departureStatus.name()));
         return new AttendanceActionResponse(attendanceMapper.toDto(saved), false, quality);

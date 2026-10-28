@@ -8,9 +8,9 @@ import {
   LayoutDashboard,
   LifeBuoy,
   Menu,
-  User,
 } from 'lucide-react';
 import PromptCheckInPopup from '../features/candidate/checkins/PromptCheckInPopup';
+import { CheckInGateProvider } from '../features/candidate/checkins/CheckInGate';
 import AppShell from './AppShell';
 
 const navItems = [
@@ -20,15 +20,15 @@ const navItems = [
   { label: 'WFH Requests', to: '/candidate/wfh', icon: Home },
   { label: 'Check-ins', to: '/candidate/progress', icon: CheckSquare },
   { label: 'Scorecards', to: '/candidate/scorecards', icon: Award },
-  { label: 'Notifications', to: '/candidate/notifications', icon: Bell },
+  { label: 'Notifications', to: '/candidate/notifications', icon: Bell, showsUnread: true },
   { label: 'Support', to: '/candidate/support', icon: LifeBuoy },
-  { label: 'My Profile', to: '/candidate/profile', icon: User },
 ];
 
+// Home sits in the middle as the main action.
 const mobileTabs = [
-  { label: 'Home', to: '/candidate/dashboard', icon: LayoutDashboard },
   { label: 'Attendance', to: '/candidate/attendance', icon: Clock3 },
   { label: 'WFH', to: '/candidate/wfh', icon: Home },
+  { label: 'Home', to: '/candidate/dashboard', icon: LayoutDashboard, primary: true },
   { label: 'Check-ins', to: '/candidate/progress', icon: CheckSquare },
   {
     label: 'More',
@@ -55,17 +55,17 @@ const getPageInfo = (path) => {
 };
 
 export const CandidateLayout = () => (
-  <>
+  <CheckInGateProvider>
     <AppShell
       navItems={navItems}
       homePath="/candidate/dashboard"
       accent="primary"
-      roleLabel="Candidate"
+      profilePath="/candidate/profile"
       getPageInfo={getPageInfo}
       mobileTabs={mobileTabs}
     />
     <PromptCheckInPopup />
-  </>
+  </CheckInGateProvider>
 );
 
 export default CandidateLayout;
