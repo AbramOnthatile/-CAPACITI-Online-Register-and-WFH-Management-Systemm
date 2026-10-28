@@ -9,10 +9,42 @@ import EmptyState from '../../components/common/EmptyState';
 import { ErrorState, Skeleton } from '../../components/common/RequestState';
 import { formatSastDateTime } from '../../lib/time';
 import { canRetryError } from '../../api/client';
+import { formatCountdown, parseTimestamp } from '../../lib/timestamps';
 
 const stages = [PromptStage.MORNING_KICKOFF, PromptStage.MIDDAY_PULSE, PromptStage.EOD_WRAP_UP];
 
 const CheckIns = () => {
+  const { prompts, promptServerTime, promptsError, submitPrompt } = useApp();
+  const [currentTimeMs, setCurrentTimeMs] = useState(Date.now);
+  const [responses, setResponses] = useState({});
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState({});
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTimeMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleSubmit = async (prompt) => {
+    const response = responses[prompt.id]?.trim() || prompt.response || '';
+    if (!response) {
+      setErrors((current) => ({ ...current, [prompt.id]: 'Enter a response before submitting.' }));
+      return;
+    }
+    setErrors((current) => ({ ...current, [prompt.id]: '' }));
+    try {
+      const result = await submitPrompt(prompt.id, {
+        draftKey: `${prompt.id}-${crypto.randomUUID()}`,
+        response,
+      });
+      setSubmitted((current) => ({ ...current, [prompt.id]: result.quality.feedbackMessage }));
+    } catch (error) {
+      setErrors((current) => ({
+        ...current,
+        [prompt.id]: error instanceof Error ? error.message : 'Check-in could not be submitted.',
+      }));
+    }
+  };
   const { prompts, activePrompts, promptsError, promptsLoading, promptServerTime, refreshPrompts } = useApp();
   const activePromptIds = new Set(activePrompts.map((prompt) => prompt.id));
 

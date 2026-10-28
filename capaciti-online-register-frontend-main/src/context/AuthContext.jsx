@@ -1,20 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { clearApiToken, getApiToken, setApiToken } from '../api/client';
 import { useAuthApi } from '../api/hooks';
-import { useMocks } from '../api/mockMode';
-import { readMockValue, removeMockValue, writeMockValue } from '../mocks/storage';
+import { removeMockValue } from '../mocks/storage';
 import { clearApiQueryCache } from '../api/hooks/queryClient';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const authApi = useAuthApi();
-  const [user, setUser] = useState(() => useMocks ? readMockValue('session-user', null) : null);
-  const [loading, setLoading] = useState(!useMocks && Boolean(getApiToken()));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(Boolean(getApiToken()));
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (useMocks || !getApiToken()) return;
+    const handleSessionExpired = () => {
+      clearApiQueryCache();
+      setUser(null);
+      setLoading(false);
+      setError(null);
+    };
+    window.addEventListener('capaciti:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('capaciti:session-expired', handleSessionExpired);
+  }, []);
+
+  useEffect(() => {
+    if (!getApiToken()) {
+      setLoading(false);
+      return;
+    }
     authApi.me()
       .then(setUser)
       .catch((requestError) => setError(requestError))
@@ -24,8 +37,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async (email, password) => {
     setError(null);
     const result = await authApi.login({ email, password });
-    if (!useMocks) setApiToken(result.token);
-    else writeMockValue('session-user', result.user);
+    setApiToken(result.token, result.expiresAt);
     setUser(result.user);
     return { success: true, user: result.user };
   }, [authApi]);
@@ -44,17 +56,18 @@ export const AuthProvider = ({ children }) => {
   }, [authApi]);
 
   const logout = useCallback(() => {
-    if (!useMocks) clearApiToken();
-    else removeMockValue('session-user');
+    clearApiToken({ redirect: false });
+    removeMockValue('session-user');
     clearApiQueryCache();
     setUser(null);
+    setLoading(false);
+    setError(null);
   }, []);
 
   const updateCurrentUser = useCallback((updates) => {
     if (!user) return;
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    if (useMocks) writeMockValue('session-user', updatedUser);
   }, [user]);
 
   const value = useMemo(

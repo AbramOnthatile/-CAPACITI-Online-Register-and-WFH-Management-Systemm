@@ -2,7 +2,6 @@ import type { ApiErrorEnvelope } from './types';
 import { clearApiToken, getApiToken, setApiToken } from '../lib/auth/session';
 
 const requestTimeoutMs = 15_000;
-let redirectingAfterUnauthorized = false;
 
 export class ApiError extends Error {
   readonly status: number;
@@ -104,13 +103,6 @@ export function canRetryError(error: unknown): boolean {
     : false;
 }
 
-function captureLoginSession(path: string, method: string, body: unknown): void {
-  if (method !== 'POST' || path.replace(/\/+$/, '') !== '/auth/login' || !isRecord(body)) return;
-  if (typeof body.token === 'string' && typeof body.expiresAt === 'string') {
-    setApiToken(body.token, body.expiresAt);
-  }
-}
-
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
@@ -160,12 +152,6 @@ export async function apiRequest<T>(
     if (!response.ok) {
       if (response.status === 401 && token) {
         clearApiToken();
-        if (!redirectingAfterUnauthorized) {
-          redirectingAfterUnauthorized = true;
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-            window.location.replace('/login');
-          }
-        }
       }
       throw createApiError(response.status, responseBody, response.statusText);
     }
@@ -174,7 +160,6 @@ export async function apiRequest<T>(
     if (typeof responseBody === 'string') {
       throw new ApiError(response.status, 'INVALID_RESPONSE', 'The API returned a non-JSON success response.');
     }
-    captureLoginSession(path, method, responseBody);
     return responseBody as T;
   } catch (error) {
     if (timedOut) throw new ApiError(0, 'TIMEOUT', 'The request timed out. Check your connection and try again.');
