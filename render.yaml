@@ -1,0 +1,39 @@
+# Render Blueprint for the Spring Boot backend (the frontend is on Vercel).
+# Render > New > Blueprint > pick this repo. Values marked sync: false are
+# asked for once in the Render dashboard and never stored in git.
+services:
+  - type: web
+    name: capaciti-backend
+    runtime: docker
+    plan: free
+    rootDir: capaciti-online-register-backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION_MINUTES
+        value: "60"
+      # Your Vercel URL(s), comma-separated, e.g. https://your-app.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: SEED_ENABLED
+        value: "false"
+      - key: SEED_PASSWORD
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: TEAMS_WEBHOOK_URL
+        sync: false
